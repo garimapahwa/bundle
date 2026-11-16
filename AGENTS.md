@@ -1,13 +1,17 @@
 # Guidance for AI coding tools
 
-This repo is a forkable starter for a hands-on Apify Actor workshop. The full workshop lives in
-[`README.md`](./README.md): intro, prerequisites, example use cases, five steps, and a
-resources list. `README.md` is both the workshop structure and your reference for building
-agents here.
+This repo is a forkable starter for a hands-on Apify workshop: build an AI agent that uses
+existing Apify Store Actors as tools, deploy it as an Actor, and monetize it. The full workshop
+lives in [`README.md`](./README.md). It is both the workshop structure and your reference for
+building agents here.
 
 The user's Actor lives in [`python-langgraph/`](./python-langgraph): the Python LangGraph AI
 agent template, wired to the Apify OpenRouter proxy. Build the user's agent there. Do not
 scaffold a second Actor.
+
+[`solution/`](./solution) is the finished workshop agent, kept as a fallback. Do not copy from
+it or edit it unless the user asks. When the user asks to build the workshop agent, write it in
+`python-langgraph/` from the prompt and the tool Actor table in `README.md`.
 
 ## Defer to the Apify Actor Development skill
 
@@ -29,43 +33,32 @@ Claude Code, `.claude/skills/`).
 3. **Call it** - over the [API](https://docs.apify.com/api/v2) or the
    [Apify MCP server](https://docs.apify.com/platform/integrations/mcp).
 4. **Monetize** - in the **Publishing** tab, set up pay per event, then publish to Apify Store.
-   PPE Actors without "Pay per event + usage", with limited permissions, and without Standby are
-   auto-eligible for agentic payment (x402 / Skyfire) once the developer completes identity
-   verification. [Monetize](https://docs.apify.com/platform/actors/publishing/monetize).
-
-## Actor anatomy
-
-- [`.actor/actor.json`](https://docs.apify.com/platform/actors/development/actor-definition/actor-json) -
-  metadata and config.
-- [`.actor/input_schema.json`](https://docs.apify.com/platform/actors/development/actor-definition/input-schema) -
-  the JSON input shape.
-- `my_actor/` - Actor code (`main.py` runs the agent loop, `tools.py` holds the tools).
-- [`Dockerfile`](https://docs.apify.com/platform/actors/development/actor-definition/dockerfile) -
-  build and run definition.
-- Output goes to a [dataset](https://docs.apify.com/platform/storage/dataset).
-- Keep secrets in env vars or [`apify secrets`](https://docs.apify.com/platform/actors/development/programming-interface/environment-variables),
-  never in the repo.
+   [Monetize](https://docs.apify.com/platform/actors/publishing/monetize).
 
 ## Building an AI agent (step 2, the payoff)
 
-The pattern: **the agent loop runs inside the Actor, Apify Actors are the tools it calls, and
-the dataset is the output.**
+The pattern: **the agent loop runs inside the Actor, Apify Store Actors are the tools it calls,
+and the dataset is the output.**
 
-- Drive the loop with [LangGraph](https://langchain-ai.github.io/langgraph/) (hand-wired) or the
-  [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/) (framework).
-- Call Actors as tools with the
-  [Apify client for Python](https://docs.apify.com/api/client/python/); find tools in
-  [Apify Store](https://apify.com/store).
+- Keep the loop on LangChain's `create_agent`, as in the template, with a `system_prompt`, a
+  Pydantic `response_format`, and a recursion limit.
+- Call Actors as tools with `Actor.apify_client.actor('<username>/<name>').call(run_input=...)`,
+  then read `run['defaultDatasetId']` with `Actor.apify_client.dataset(...).list_items()`.
+  Read the tool Actor's input schema and a sample of its output before you write the tool.
+- Tools return only the fields the model needs, trimmed. Never return a whole dataset item or a
+  full transcript.
+- If a tool Actor fails, return the error as text so the agent can react. Do not raise.
+- Tool Actors must run under limited permissions, because an Actor with limited permissions can
+  only call other Actors that also use them.
 - Route the LLM through the [Apify OpenRouter proxy](https://apify.com/apify/openrouter): an
   OpenAI-compatible endpoint at `https://openrouter.apify.actor/api/v1`, with `APIFY_TOKEN` as
   the API key and any [OpenRouter model slug](https://openrouter.ai/models) as the model. The
   agent needs only `APIFY_TOKEN` at runtime - no provider API key. The proxy works only for
   Actors running on the Apify platform, so test with `apify push` and a run in Apify Console.
-- Alternative route, only if the user asks: their own provider key (for example
-  `OPENAI_API_KEY`), as an env var locally and an
-  [`apify secrets`](https://docs.apify.com/cli/docs/vars#define-secrets) secret once deployed.
-  This route also runs locally with `apify run`. See "Use your own LLM key instead" in step 2 of
-  the README.
+- Alternative route, only if the user asks: their own provider key. See "Use your own LLM key
+  instead" in step 2 of the README.
+- Push one dataset item per finished result. The synthetic `apify-default-dataset-item` event
+  charges for it, so do not add a charge call for the same result.
 
 ## Writing style (for any docs edits)
 

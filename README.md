@@ -1,263 +1,293 @@
-# Build, deploy, and monetize AI agents
+# Build a high-value Actor with AI
 
-Build a real AI agent, ship it to the Apify platform, and turn it into something people (and
-other agents) can pay to use - all from this one forked repo.
+The build-along for **AI Tools that Earn**, the Apify hackathon in Bengaluru (November 22, 2026).
 
-## How it works
+In 40 minutes we build an AI agent, ship it to the Apify platform as an Actor, and put a price
+on it: a short intro, then about 30 minutes of building. The agent does not scrape anything itself. It uses Actors that already exist in
+[Apify Store](https://apify.com/store) as its tools, and turns their raw data into something a
+person would pay for.
 
-In about 40 minutes you will build an AI agent and take it through the full Apify Actor
-lifecycle: build, deploy, and monetize.
+Adapted from Apify's [build-ai-agents-pycon-greece](https://github.com/apify/build-ai-agents-pycon-greece)
+workshop. Same lifecycle, new example.
 
-This is a **live, build-along workshop**. We pick one example use case and build it together,
-end to end, while explaining each step:
+## What makes an Actor high-value
 
-- We start from the AI agent template in [`python-langgraph/`](./python-langgraph), turn it into
-  our example agent, then deploy and monetize it live.
-- You follow along in your own fork, working inside `python-langgraph/`.
-- Each step ends with a "Your project" nudge, so by the end you can swap the example for your
-  own idea and take it straight into your own project.
+Every project at this hackathon is judged on one question: **would someone actually pay for
+this?** Rows of data rarely pass that test. A conclusion does.
 
-The example is chosen on the day. It is just a vehicle for the lifecycle, so anything you build
-follows the same shape.
+| Raw data | A conclusion someone pays for |
+| --- | --- |
+| 10,000 company names | The 40 that raised funding this month, with contacts |
+| 500 YouTube search results | What is winning in your niche, and three videos to make next |
+| 300 flat listings from three sites | The five flats worth visiting this weekend, and why |
 
-An **[Actor](https://docs.apify.com/platform/actors)** is a serverless program on
-[the Apify platform](https://docs.apify.com/platform): it takes JSON input, does a task, and
-writes results to a [dataset](https://docs.apify.com/platform/storage/dataset). That simple
-shape is all you need to build, deploy, monetize, and eventually run a full AI agent.
+That gap is what an agent fills. Store Actors fetch the data. Your agent reasons over it and
+writes the conclusion. You sell the conclusion.
 
-> **New to Apify?** Skim [What is Apify](https://docs.apify.com/platform) and
-> [Actors](https://docs.apify.com/platform/actors) before you start. A full link list lives in
-> [Resources](#resources) at the bottom.
+## What we build
+
+A **YouTube content brief agent**.
+
+- **Who pays:** a YouTube creator or a content agency. Before scripting a video, they spend
+  hours working out what already performs in their niche.
+- **Input:** one topic, for example `how to start investing`.
+- **Output:** a brief with the most-viewed videos, the exact words each one opens with, the
+  patterns behind those hooks, and three script ideas.
+
+```mermaid
+flowchart LR
+    A[Topic] --> B[Your agent Actor<br/>LLM in a loop]
+    B -- search --> C[thirdwatch/youtube-scraper]
+    C -- videos and view counts --> B
+    B -- read openings --> D[thirdwatch/youtube-transcripts-scraper]
+    D -- transcripts --> B
+    B --> E[Content brief<br/>in the dataset]
+```
+
+The loop in the middle is a **ReAct agent**: the model reasons about what it needs, acts by
+calling a tool, observes the result, and repeats until it can answer. You will watch it do
+exactly that in the run log.
+
+The finished agent is in [`solution/`](./solution). You build your own copy in
+[`python-langgraph/`](./python-langgraph).
+
+## Before the session
+
+Ten minutes of setup at home saves you the first ten minutes of hacking time.
+
+1. Create a free [Apify account](https://console.apify.com/sign-up). The free plan's monthly
+   credits cover this workshop many times over.
+2. Check you have [Python 3.10+](https://www.python.org/downloads/): `python --version`.
+3. Install the [Apify CLI](https://docs.apify.com/cli/docs/installation) and log in:
+
+   ```bash
+   curl -fsSL https://apify.com/install-cli.sh | bash
+   apify login --method console
+   apify info
+   ```
+
+   On Windows (PowerShell), install with `irm https://apify.com/install-cli.ps1 | iex`.
+
+4. Have an AI coding tool with Agent Skills support ready:
+   [Cursor](https://cursor.com/) (the free tier works) or
+   [Claude Code](https://docs.claude.com/en/docs/claude-code) (needs a paid plan).
+5. Fork this repo and clone your fork.
+6. Install the Apify Actor Development skill into your AI coding tool. For Claude Code, from the
+   root of your clone:
+
+   ```bash
+   git clone --depth 1 https://github.com/apify/agent-skills.git /tmp/agent-skills
+   mkdir -p .claude/skills
+   cp -r /tmp/agent-skills/skills/apify-actor-development .claude/skills/
+   ```
+
+   For other tools, copy the same folder into the skills folder your tool's docs point to.
+
+7. Prove it all works by deploying the untouched template:
+
+   ```bash
+   cd python-langgraph
+   apify push
+   ```
+
+   If the CLI prints a link to your Actor in Apify Console, you are ready.
+
+You need no OpenAI or Anthropic key. The agent calls its LLM through the
+[Apify OpenRouter proxy](https://apify.com/apify/openrouter), paid from your Apify credits.
+
+> **Note:** your account must be able to run public Actors, because both the tool Actors and
+> the OpenRouter proxy are public Actors. The free plan can. The $1 Creator plan cannot, so do
+> not use a Creator-plan account for this workshop.
 
 ## Scope
 
-What we cover, in order. Each step builds on the last.
-
-1. [Step 1: Setup and your first Actor](#step-1-setup-and-your-first-actor) (~10 min)
-2. [Step 2: Build your agent](#step-2-build-your-agent) (~20 min)
+1. [Step 1: Deploy your first Actor](#step-1-deploy-your-first-actor) (~6 min)
+2. [Step 2: Build the agent](#step-2-build-the-agent) (~16 min)
 3. [Step 3: Call it from anywhere](#step-3-call-it-from-anywhere) (~3 min)
-4. [Step 4: Monetize and publish](#step-4-monetize-and-publish) (~7 min)
-5. [Step 5: Use Apify in your own projects](#step-5-use-apify-in-your-own-projects)
+4. [Step 4: Monetize and publish](#step-4-monetize-and-publish) (~5 min)
+5. [Step 5: Make it yours](#step-5-make-it-yours) (the rest of the day)
 
-## Prerequisites
-
-- An **[Apify account](https://console.apify.com/sign-up)**. You can sign up for free, and the
-  free tier's monthly usage credits are plenty for this workshop.
-- **[Python 3.10+](https://www.python.org/downloads/)**.
-- An **AI coding tool with Agent Skills support** - [Claude Code](https://docs.claude.com/en/docs/claude-code),
-  [Cursor](https://cursor.com/), or similar. You will install an Apify skill into it.
-
-The agent calls its LLM through the [Apify OpenRouter proxy](https://apify.com/apify/openrouter),
-so you need no LLM provider key. Prefer your own key? See
-[Use your own LLM key instead](#use-your-own-llm-key-instead) in step 2.
+Falling behind? Skip to [Stuck? Use the finished agent](#stuck-use-the-finished-agent). You lose
+nothing, and you can read the code afterwards.
 
 ---
 
-## Step 1: Setup and your first Actor
+## Step 1: Deploy your first Actor
 
-Install your tools, log in, then deploy and run your first Actor.
+An **[Actor](https://docs.apify.com/platform/actors)** is a serverless program on the Apify
+platform. JSON input goes in, the Actor runs a task, and results go out to a
+[dataset](https://docs.apify.com/platform/storage/dataset). Everything today builds on that
+shape.
 
-**Time:** ~10 minutes
+**Time:** ~6 minutes
 
-### 1. Check your Python version
+### 1. Tour the structure
 
-```bash
-python --version  # should be 3.10 or higher
-```
-
-If it is missing or too old, install it before continuing.
-
-### 2. Install the Apify CLI
-
-The [Apify CLI](https://docs.apify.com/cli/) is how you create, run, and deploy Actors from
-your terminal. The installation script builds a standalone executable, so you don't need
-Node.js. See the [installation guide](https://docs.apify.com/cli/docs/installation) for other
-install methods.
-
-On macOS or Linux:
-
-```bash
-curl -fsSL https://apify.com/install-cli.sh | bash
-apify --version
-```
-
-On Windows (PowerShell):
-
-```powershell
-irm https://apify.com/install-cli.ps1 | iex
-apify --version
-```
-
-You should see a version number printed.
-
-### 3. Log in to Apify
-
-```bash
-apify login --method console
-```
-
-This opens Apify Console in your browser. Approve the login there, and the CLI is linked to your
-Apify account. It is the only time you log in.
-
-To check that it worked, run:
-
-```bash
-apify info
-```
-
-You should see the details of your Apify account.
-
-### 4. Install the Apify Actor Development skill
-
-This skill teaches your AI coding tool how to scaffold, build, and deploy Actors. It powers the
-vibe-coding in step 2.
-
-Clone the [apify/agent-skills](https://github.com/apify/agent-skills) repo and copy the skill
-into your AI coding tool's skills folder. For Claude Code, that is `.claude/skills/` in this
-repo:
-
-```bash
-git clone --depth 1 https://github.com/apify/agent-skills.git /tmp/agent-skills
-mkdir -p .claude/skills
-cp -r /tmp/agent-skills/skills/apify-actor-development .claude/skills/
-```
-
-For other tools, copy the same `skills/apify-actor-development` folder into the skills folder
-your tool's docs point to. You can browse all available skills in the
-[apify/agent-skills](https://github.com/apify/agent-skills) repo, and read what this one does
-in its [SKILL.md](https://github.com/apify/agent-skills/blob/main/skills/apify-actor-development/SKILL.md).
-
-### 5. Tour the structure
-
-Your Actor is the [`python-langgraph/`](./python-langgraph) folder: the Python LangGraph AI
-agent template, already wired to the Apify OpenRouter proxy. Move into it and work there for
-the rest of the workshop:
+Your Actor is the [`python-langgraph/`](./python-langgraph) folder: Apify's Python LangGraph
+agent template, already wired to the Apify OpenRouter proxy.
 
 ```bash
 cd python-langgraph
 ```
 
-Find these files (all defined in the
-[Actor definition](https://docs.apify.com/platform/actors/development/actor-definition) docs):
-
 - [`.actor/actor.json`](https://docs.apify.com/platform/actors/development/actor-definition/actor-json) -
-  your Actor's metadata and configuration.
+  the Actor's name, description, and configuration.
 - [`.actor/input_schema.json`](https://docs.apify.com/platform/actors/development/actor-definition/input-schema) -
-  the shape of the JSON input your Actor accepts.
-- `my_actor/` - your Actor's code. `main.py` runs the agent loop and `tools.py` holds the tools
-  it can call.
+  the JSON input the Actor accepts. Apify Console turns it into a form.
+- `my_actor/main.py` - runs the agent loop.
+- `my_actor/tools.py` - the tools the agent can call.
+- `my_actor/models.py` - the shape of the data the tools and the agent return.
 - [`Dockerfile`](https://docs.apify.com/platform/actors/development/actor-definition/dockerfile) -
-  how your Actor is built and run on the Apify platform.
+  how the Actor is built and run.
 
-### 6. Deploy and run it
+### 2. Deploy and run it
 
-The OpenRouter proxy works only for Actors running on the Apify platform, so every run in this
-workshop happens there. Push the Actor:
+The OpenRouter proxy works only for Actors running on the Apify platform, so every run today
+happens there, not on your laptop.
 
 ```bash
 apify push
 ```
 
-This builds your Actor on the Apify platform and uploads your code. When it finishes, the CLI
-prints a link to your Actor in Apify Console. Open it, keep the prefilled input, and click
-**Start**. Watch the agent reason and call tools in the **Log** tab, then check the result in
-the **Dataset** tab. The [Running Actors](https://docs.apify.com/platform/actors/running) docs
-walk through Apify Console.
+The CLI builds the Actor on the platform and prints a link to it in Apify Console. Open it,
+keep the prefilled input, and click **Start**. Watch the **Log** tab, then open the **Dataset**
+tab.
 
-> **Note:** The Actor model is just this: JSON input goes in, the Actor runs a task, and
-> results go out to a dataset. Everything else in this workshop builds on that shape.
-
-**Your project:** look at `.actor/input_schema.json` and decide what one input your own agent
-would take.
-
-**Resources**
-
-- [Apify CLI installation](https://docs.apify.com/cli/docs/installation) and
-  [command reference](https://docs.apify.com/cli/docs/reference)
-- [Actor definition](https://docs.apify.com/platform/actors/development/actor-definition):
-  [actor.json](https://docs.apify.com/platform/actors/development/actor-definition/actor-json),
-  [input schema](https://docs.apify.com/platform/actors/development/actor-definition/input-schema),
-  [Dockerfile](https://docs.apify.com/platform/actors/development/actor-definition/dockerfile)
-- [Running Actors](https://docs.apify.com/platform/actors/running) and
-  [Storage](https://docs.apify.com/platform/storage)
-- [apify/agent-skills](https://github.com/apify/agent-skills)
-
-Continue to [Step 2: Build your agent](#step-2-build-your-agent).
+**Your project:** look at `.actor/input_schema.json` and decide the one input your own agent
+would take. Write it the way your buyer would say it.
 
 ---
 
-## Step 2: Build your agent
+## Step 2: Build the agent
 
-This is the heart of the workshop. Turn the template into your own AI agent: a reasoning loop
-that calls tools and writes its results to a dataset.
+Turn the template into the YouTube content brief agent.
 
-**Time:** ~20 minutes
+**Time:** ~16 minutes
 
 ### 1. Understand the pattern
 
-An AI agent on Apify is just an Actor with three parts:
+An AI agent on Apify is an Actor with three parts:
 
-- **The agent loop runs inside the Actor.** The Actor's code drives an LLM that reasons, decides
-  what to do next, and repeats until the task is done.
-- **Apify Actors are the tools.** When the agent needs real data or an action, it calls another
-  Actor from [Apify Store](https://apify.com/store) (a scraper, a search Actor, your own Actor)
-  with the [Apify client for Python](https://docs.apify.com/api/client/python/). The template's
-  `tools.py` does exactly this with an Instagram scraper. Every run on the platform gets
-  `APIFY_TOKEN` automatically, so the client needs no extra setup.
-- **The dataset is the output.** Whatever the agent produces gets written to the dataset, just
-  like in step 1.
+- **The agent loop runs inside the Actor.** An LLM reasons, picks a tool, reads the result, and
+  repeats until it can answer.
+- **Store Actors are the tools.** When the agent needs data, it runs another Actor with the
+  [Apify client for Python](https://docs.apify.com/api/client/python/). Every run on the
+  platform gets `APIFY_TOKEN` automatically, so the client needs no setup.
+- **The dataset is the output.** Whatever the agent concludes is written to the dataset.
 
-The template hand-wires the loop with **[LangGraph](https://langchain-ai.github.io/langgraph/)**.
-You can also let a framework run it for you with the
-**[OpenAI Agents SDK](https://openai.github.io/openai-agents-python/)**
-(`pip install openai-agents`, `from agents import Agent, Runner`). Use whichever you prefer.
-
-Either way, the LLM client points at the
-[Apify OpenRouter proxy](https://docs.apify.com/sdk/python/docs/guides/ai-agents#apify-openrouter-proxy),
-an OpenAI-compatible endpoint at `https://openrouter.apify.actor/api/v1`. It uses your
-`APIFY_TOKEN` as the API key and any [OpenRouter model slug](https://openrouter.ai/models) as the
-model, as in `my_actor/main.py`:
+The LLM client points at the Apify OpenRouter proxy, an OpenAI-compatible endpoint. It takes
+your `APIFY_TOKEN` as the API key and any [OpenRouter model slug](https://openrouter.ai/models)
+as the model:
 
 ```python
 llm = ChatOpenAI(
-    model='openai/gpt-4o-mini',
+    model='anthropic/claude-haiku-5.5',
     base_url='https://openrouter.apify.actor/api/v1',
     api_key=os.environ['APIFY_TOKEN'],
 )
 ```
 
-### 2. Pick your agent
+The proxy only accepts the token of the run itself. The tokens are billed to whoever runs the
+Actor, and a token from another account does not work.
 
-Pick the example we build together in this workshop, or bring your own. Keep it small enough to
-finish in this step: one clear input, one tool Actor, one useful output.
+### 2. Meet the tool Actors
 
-### 3. Vibe-code it with your AI tool
+Open each one in Apify Store and read its input and output. Picking good tools is half the job.
 
-You installed the `apify-actor-development` skill in step 1, so let your AI coding tool build it
-for you. Describe the agent and let it implement the code in `python-langgraph/`. For example:
+| Tool Actor | What the agent uses it for | Input it needs | Output fields the agent reads |
+| --- | --- | --- | --- |
+| [thirdwatch/youtube-scraper](https://apify.com/thirdwatch/youtube-scraper) | Find the most-viewed videos for a topic | `queries` (list of search terms), `maxResults`, `searchType: "videos"`, `sort: "viewCount"` | `title`, `url`, `channelName`, `viewCount`, `durationText`, `publishedTimeText`, `isShort` |
+| [thirdwatch/youtube-transcripts-scraper](https://apify.com/thirdwatch/youtube-transcripts-scraper) | Read how each video opens | `videoUrls` (list), `maxResults`, `includeTimestamps: false`, `includeMetadata: true` | `video_url`, `title`, `channel_name`, `view_count`, `transcript_text` |
+
+Both are pay per result. One run of this agent costs about 6 cents in total.
+
+### 3. Vibe-code it
+
+Open the repo in your AI coding tool and give it this prompt:
 
 ```
-Turn this Actor into an AI agent that takes a {your input} as input, uses the
-{an Apify Store Actor} Actor as a tool to fetch data, runs an agent loop with
-{LangGraph or the OpenAI Agents SDK}, and writes the {your result} to the dataset.
+Turn the Actor in python-langgraph/ into a YouTube content brief agent.
+
+Input: a "topic" string (required) and "maxVideos" (integer, default 5). Keep "modelName"
+and "debug", and change the default model to "anthropic/claude-haiku-5.5".
+
+Tools (replace the existing ones in my_actor/tools.py). Each tool runs a Store Actor with
+Actor.apify_client and reads its dataset:
+1. search_youtube_videos(query, max_results, sort_by) runs thirdwatch/youtube-scraper and
+   returns title, url, channel, views, duration, and published for each video. Leave out Shorts.
+2. get_video_openings(video_urls) runs thirdwatch/youtube-transcripts-scraper and returns, for
+   each video, only the first 1,200 characters of transcript_text as "opening", plus url, title,
+   channel, and views. Also return the URLs that had no transcript.
+Use the input and output fields listed in the "Meet the tool Actors" table in README.md.
+If a tool Actor fails, return the error as text so the agent can react.
+
+Agent: keep create_agent from LangChain. Add a system prompt that tells it to search for the
+most-viewed videos on the topic, read the openings of the top maxVideos, and write a brief
+using only what the tools returned, quoting hooks word for word. Cap the loop with a
+recursion limit, cap the model's answer with max_tokens and a timeout, and if the agent
+raises, fail the run with a clear status message instead of pushing a result.
+
+Output: a structured ContentBrief with topic, summary, winning_videos (title, url, channel,
+views, hook, why_it_works), hook_patterns, and three script_ideas (title, hook, outline).
+Push the brief to the dataset as one item and save a Markdown version to the key-value store
+as brief.md. Log each tool call and tool result at INFO level so the loop is visible in the
+Log tab.
+
 Keep using the Apify OpenRouter proxy (https://openrouter.apify.actor/api/v1) as the LLM,
-authenticated with APIFY_TOKEN, so no provider API key is needed. Follow the Apify
-Actor Development skill.
+authenticated with APIFY_TOKEN, so no provider API key is needed. Update the input schema,
+dataset schema, and actor.json to match. Follow the Apify Actor Development skill.
 ```
 
-Let the tool update your input schema, add dependencies, and write the loop. Review what it
-generates.
+Review what it writes. Three things to check before you push:
+
+- `tools.py` returns a short, clean result. A full transcript can be 100,000 characters. The
+  agent only needs the opening, so that is all the tool should hand back. Smaller tool results
+  mean a cheaper, faster, and more accurate agent.
+- `models.py` describes the brief you want. The output shape is your product.
+- `.actor/input_schema.json` asks for a topic in plain words.
 
 ### 4. Push and run it
 
-Same loop as in step 1: run `apify push`, start the Actor in Apify Console with your input,
-watch the agent loop in the **Log** tab, and check the result in the **Dataset** tab. Repeat for
-every change.
+```bash
+apify push
+```
 
-This is the payoff - a working agent built from a single prompt.
+Start the Actor in Apify Console with a topic. In the **Log** tab you see the loop:
 
-**Your project:** swap the three parts for your idea - the input, the tool Actor it calls, and
-the output it writes. The pattern stays the same.
+```
+AGENT -> search_youtube_videos({"query": "how to start investing", "max_results": 10, "sort_by": "viewCount"})
+TOOL  <- search_youtube_videos returned 10 videos
+AGENT -> get_video_openings({"video_urls": ["https://www.youtube.com/watch?v=...", "..."]})
+TOOL  <- get_video_openings returned 5 openings (0 videos had no transcript)
+Pushed the brief into the dataset!
+```
+
+Then open the **Dataset** tab for the structured brief, and the **Key-value store** tab for
+`brief.md`.
+
+A run takes one to two minutes. Pick a topic where people talk on camera. Music-only videos
+have no transcript to read.
+
+> **Note:** pick the model on evidence, not habit. In test runs of this agent, the template's
+> default `openai/gpt-4o-mini` made an extra tool call it did not need in all three runs and
+> failed on the structured brief in two of them. `anthropic/claude-haiku-5.5` finished all four
+> of its runs and costs less per token. Change `modelName` in the input to try any other OpenRouter model, and run it more
+> than once before you trust it.
+
+**Your project:** swap the three parts for your idea - the input, the tool Actors, and the
+output. The pattern stays the same.
+
+### Stuck? Use the finished agent
+
+The working agent is in [`solution/`](./solution). Deploy it as is:
+
+```bash
+cd solution
+apify push
+```
+
+Then read `solution/my_actor/tools.py` and `solution/my_actor/main.py`. Together they are under
+250 lines.
 
 ### Use your own LLM key instead
 
@@ -265,7 +295,7 @@ the output it writes. The pattern stays the same.
 <summary>Call OpenAI directly with your own <code>OPENAI_API_KEY</code>, and run locally</summary>
 
 With your own key, the agent no longer needs the proxy, so it also runs on your machine with
-`apify run` (this needs Python 3.10+). The tokens bill your provider account, not the user's.
+`apify run`.
 
 1. Add the key to your shell environment. Never commit keys to the repo.
 
@@ -273,26 +303,16 @@ With your own key, the agent no longer needs the proxy, so it also runs on your 
    export OPENAI_API_KEY="sk-..."
    ```
 
-2. In `my_actor/main.py`, use the provider's client with its defaults, which read
-   `OPENAI_API_KEY` from the environment, and pass an OpenAI model name such as `gpt-4o-mini`:
+2. In `my_actor/main.py`, use the provider's client with its defaults and an OpenAI model name:
 
    ```python
-   llm = ChatOpenAI(model=model_name)
+   llm = ChatOpenAI(model='gpt-4o-mini')
    ```
 
-   In the vibe-coding prompt, replace the OpenRouter sentence with: "Use OpenAI with the
-   `OPENAI_API_KEY` environment variable, so it works both locally and once deployed."
+3. Run it locally. `apify run` injects your token from `apify login` as `APIFY_TOKEN`, so the
+   tool Actors still work. Output lands in `storage/datasets/default/`.
 
-3. Run it locally. `apify run` injects your token from `apify login` as `APIFY_TOKEN`, so tool
-   Actors still work. Output lands in `storage/datasets/default/`. See the
-   [Storage docs](https://docs.apify.com/platform/storage).
-
-   ```bash
-   apify run
-   ```
-
-4. Give the deployed Actor its own copy of the key. Store it as a secret and reference it from
-   `.actor/actor.json`, then `apify push` as usual:
+4. Give the deployed Actor its own copy of the key as a secret, then `apify push`:
 
    ```bash
    apify secrets add openaiApiKey "sk-..."
@@ -304,251 +324,141 @@ With your own key, the agent no longer needs the proxy, so it also runs on your 
    }
    ```
 
-   Secrets live on the Apify platform and are injected at runtime, encrypted at rest and
-   redacted from logs. Without this, the deployed run fails at the first model call. See
-   [secret environment variables](https://docs.apify.com/platform/actors/development/programming-interface/environment-variables).
-
 5. When you monetize in step 4, your event prices need to cover your token costs.
 
 </details>
-
-**Resources**
-
-- [LangGraph docs](https://langchain-ai.github.io/langgraph/) and
-  [OpenAI Agents SDK docs](https://openai.github.io/openai-agents-python/)
-- [Apify OpenRouter proxy](https://apify.com/apify/openrouter) and
-  [OpenRouter models](https://openrouter.ai/models)
-- [Apify client for Python](https://docs.apify.com/api/client/python/) (call Actors as tools)
-- [Apify Store](https://apify.com/store) (find Actors to use as tools)
-- [Secret environment variables](https://docs.apify.com/platform/actors/development/programming-interface/environment-variables)
-- [apify-actor-development SKILL.md](https://github.com/apify/agent-skills/blob/main/skills/apify-actor-development/SKILL.md)
-
-Continue to [Step 3: Call it from anywhere](#step-3-call-it-from-anywhere).
 
 ---
 
 ## Step 3: Call it from anywhere
 
-Your agent already runs in the cloud. That also means anyone, or any agent, can start it.
+Your agent runs in the cloud, so anyone, or any other agent, can start it.
 
 **Time:** ~3 minutes
 
 ### 1. Over the API
 
-Every Actor has a run endpoint, so you (or another agent) can trigger it over HTTP from anywhere:
+Every Actor has a run endpoint. This call starts your agent, waits, and returns the brief:
 
-```
-https://api.apify.com/v2/acts/<your-username>~<actor-name>/runs?token=<API_TOKEN>
+```bash
+curl -X POST "https://api.apify.com/v2/acts/<your-username>~<actor-name>/run-sync-get-dataset-items" \
+  -H "Authorization: Bearer <YOUR_API_TOKEN>" \
+  -H "Content-Type: application/json" \
+  -d '{"topic": "how to start investing"}'
 ```
 
-This is how your agent gets called in production. See
-[Run Actor and retrieve data via API](https://docs.apify.com/academy/api/run-actor-and-retrieve-data-via-api)
-and the [Apify API reference](https://docs.apify.com/api/v2).
+Your API token is in Apify Console under **Settings > API & Integrations**. Treat it like a
+password. See the [Apify API reference](https://docs.apify.com/api/v2).
 
 ### 2. Over MCP
 
-Your Actor is also reachable through the Apify MCP server, so any MCP client - Claude, Cursor,
-or another agent - can discover and run it as a tool. Point the client at
-`https://mcp.apify.com` (OAuth on first use). Combined with pay per event in step 4, this is how
-an autonomous agent finds and pays for your Actor. See
-[Apify MCP server](https://docs.apify.com/platform/integrations/mcp).
+Your Actor is also reachable through the [Apify MCP server](https://docs.apify.com/platform/integrations/mcp).
+Point any MCP client - Claude, Cursor, or another agent - at `https://mcp.apify.com` and it can
+discover and run your Actor as a tool. Combined with pay per event in step 4, this is how an
+autonomous agent finds and pays for your Actor.
 
-**Your project:** think about who calls your agent - a person in Apify Console, your own app
-over the API, or another agent over MCP.
-
-**Resources**
-
-- [Apify MCP server](https://docs.apify.com/platform/integrations/mcp) (`https://mcp.apify.com`)
-- [API integration](https://docs.apify.com/platform/integrations/api) and the
-  [Apify API reference](https://docs.apify.com/api/v2)
-- [Run Actor and retrieve data via API](https://docs.apify.com/academy/api/run-actor-and-retrieve-data-via-api)
-
-Continue to [Step 4: Monetize and publish](#step-4-monetize-and-publish).
+**Your project:** who calls your agent - a person in Apify Console, your own app over the API,
+or another agent over MCP?
 
 ---
 
 ## Step 4: Monetize and publish
 
-Put a price on your agent, then publish it to Apify Store, so other people, and other agents,
-can discover, run, and pay for it.
+Put a price on the brief, then publish the Actor to Apify Store.
 
-**Time:** ~7 minutes
+**Time:** ~5 minutes
 
-### 1. Add your billing details
+### 1. Price it with pay per event
 
-Before you can monetize, add your billing and payout details in Apify Console under
-**Settings > Billing**, and complete
+With **pay per event (PPE)**, users pay for events you define. Two
+[synthetic events](https://docs.apify.com/platform/actors/publishing/monetize/pay-per-event#synthetic-events)
+are charged automatically, with no code in your Actor:
+
+- `apify-actor-start` - charged on every run start. Keep the default price.
+- `apify-default-dataset-item` - charged for each item written to the default dataset. Our
+  agent pushes one item per brief, so this is the price of a brief.
+
+How to think about the price:
+
+- **Start from the buyer, not from your cost.** A brief replaces hours of research for a
+  creator. That is what you are pricing.
+- **Know your floor.** One run uses about 10 search results and 5 transcripts from the tool
+  Actors, plus LLM tokens. That came to about 6 cents in test runs. Check the cost of your own
+  test runs in Apify Console before you set a price.
+- **You keep 80% of what users pay,** minus the platform costs of the runs.
+
+> **Note:** the tool Actors and the OpenRouter proxy both run on the token of the user who
+> starts your Actor, so the user pays for them directly, on top of your event price. Keep the
+> total in mind when you set that price.
+
+### 2. Set it up
+
+Add your billing details under **Settings > Billing** and complete
 [identity verification](https://docs.apify.com/platform/actors/publishing/monetize/monthly-payouts#verify-your-identity).
-You need both to receive payouts, and verification is also required for agentic payments.
+Then, in the **Publishing** tab of your Actor, open **Monetization** and follow the wizard: set
+the event prices, pick the primary event, review, and submit. Leave **Pay per event + usage**
+off.
 
-### 2. Price it with pay per event
+### 3. Publish
 
-We use **pay per event (PPE)**: users pay for specific events you define, such as each result
-produced. It is the most flexible model for agents, and the only one AI agents can pay for on
-their own. Apify supports other
-[pricing models](https://docs.apify.com/platform/actors/running/actors-in-store#pricing-models)
-too.
+In the **Publishing** tab, complete the checklist and submit your Actor to Apify Store. Your
+listing is your landing page. Name the buyer in the first line, show a real output, and say
+what one result costs.
 
-Apify adds two [synthetic events](https://docs.apify.com/platform/actors/publishing/monetize/pay-per-event#synthetic-events)
-that are charged automatically, with no code in your Actor:
-
-- `apify-actor-start` - charged on every run start, and Apify covers the compute of the first 5
-  seconds of each run. Keep the default price, and don't add your own start event.
-- `apify-default-dataset-item` - charged for each item your Actor writes to its default dataset.
-  If your agent pushes one item per answered query, like the `python-langgraph` template does,
-  this is your per-result price.
-
-Add a custom event charged with `Actor.charge()` only when your Actor delivers value that is
-not a dataset item.
-
-> **Note:** Leave LLM token costs out of your prices. The proxy runs on the token of the user
-> who starts your Actor, so they already pay for their tokens directly. Using your own key? See
-> the last point of [Use your own LLM key instead](#use-your-own-llm-key-instead).
-
-### 3. Set up monetization
-
-In the **Publishing** tab of your Actor, open **Monetization** and follow the wizard (full
-walkthrough in [Set up monetization](https://docs.apify.com/platform/actors/monetize/set-up-monetization)):
-
-1. **Actor pricing** - configure the events and their prices. Leave **Pay per event + usage**
-   off.
-2. **Primary event** - pick the one event that best represents the value your Actor delivers
-   (for example, one result returned).
-3. **Review** - confirm everything, then submit.
-
-> **Note:** Your Actor automatically becomes eligible for autonomous agent payment over
-> protocols like x402 and Skyfire when it uses PPE without **Pay per event + usage**, runs
-> with [limited permissions](https://docs.apify.com/platform/actors/development/permissions),
-> does not use Standby mode, and you have completed identity verification. There is no separate
-> opt-in, so an AI agent can discover and pay for your Actor on its own. See
-> [agentic payments](https://docs.apify.com/platform/actors/publishing/monetize#make-your-actor-eligible-for-agentic-payments).
-
-### 4. Publish to Apify Store
-
-In the **Publishing** tab, complete the publish checklist and submit your Actor to Apify Store.
-A public Actor is what other people (and agents) can discover and run. See
-[Publish your Actor](https://docs.apify.com/platform/actors/publishing/publish) for the full
-checklist.
-
-### 5. Track your earnings
-
-Once your Actor has paying users, follow revenue and usage in Apify Console under
-**Development > Insights > Analytics**. Payout invoices are generated automatically each month.
-
-**Your project:** decide what one event represents the value your agent delivers, and what a
-user would pay for it.
-
-**Resources**
-
-- [Publishing overview](https://docs.apify.com/platform/actors/publishing) and
-  [Publish your Actor](https://docs.apify.com/platform/actors/publishing/publish)
-- [Monetize your Actor](https://docs.apify.com/platform/actors/publishing/monetize) (agentic
-  payments eligibility) and
-  [Set up monetization](https://docs.apify.com/platform/actors/monetize/set-up-monetization)
-- [Pay per event](https://docs.apify.com/platform/actors/publishing/monetize/pay-per-event)
-- [Apify Store](https://apify.com/store)
-
-Continue to [Step 5: Use Apify in your own projects](#step-5-use-apify-in-your-own-projects).
+**Your project:** what one event is the value your agent delivers, and what would your buyer
+pay for it?
 
 ---
 
-## Step 5: Use Apify in your own projects
+## Step 5: Make it yours
 
-You now have the full lifecycle working. To build your own agent, swap the input, the tool
-Actor, and the output, then push and publish it just like in steps 1 to 4.
+You have the full lifecycle. For the hackathon, change three things and keep everything else.
 
-### Don't build from scratch - use ready-made Actors
+| Swap | In the workshop | In your project |
+| --- | --- | --- |
+| The input | A topic | What your buyer would type |
+| The tools | Two YouTube Actors | Any Actors from [Apify Store](https://apify.com/store) |
+| The output | A content brief | The conclusion your buyer pays for |
 
-You do not have to build everything yourself. [Apify Store](https://apify.com/store) has
-thousands of ready-made Actors - scrapers, data extractors, integrations, and AI tools - that
-you can use in your project in three ways:
+### Start from the buyer
 
-- **As MCP tools, with zero glue code** - point your AI coding tool or agent at the
-  [Apify MCP server](https://docs.apify.com/platform/integrations/mcp) (`https://mcp.apify.com`)
-  and every Store Actor becomes a tool it can discover and call. The fastest way to give an agent
-  real capabilities.
-- **As tools your agent calls directly** - wire a Store Actor into your agent with the
-  [Apify client for Python](https://docs.apify.com/api/client/python/), exactly like the workshop
-  agent did.
-- **As building blocks in any project** - call a Store Actor over the
-  [API](https://docs.apify.com/api/v2) from any stack to get data or automation without writing
-  the scraper or integration yourself. Even if your project is not an AI agent, this is
-  the fastest way to get real data into it.
+Before you write a prompt, finish this sentence: "**[A specific person]** pays for this because
+it saves them **[a specific job]**." If you cannot, change the idea, not the code.
 
-Browse [Apify Store](https://apify.com/store), find an Actor for your domain, and wire it in.
+### Idea starters
 
-**Resources**
+Each one is the same agent with different tools. All of these tool Actors are live in Apify
+Store.
 
-- [Apify Store](https://apify.com/store) (thousands of ready-made Actors for your project)
-- [Apify MCP server](https://docs.apify.com/platform/integrations/mcp)
-- [Apify API reference](https://docs.apify.com/api/v2) (call any Actor from any stack)
-- [Input schema](https://docs.apify.com/platform/actors/development/actor-definition/input-schema)
-  and [dataset schema](https://docs.apify.com/platform/actors/development/actor-definition/dataset-schema)
-- Full link list in [Resources](#resources) below
+| Buyer | They type | Tool Actors | They get |
+| --- | --- | --- | --- |
+| Someone house hunting in Bengaluru | "2 BHK in Koramangala under 50k" | [nobroker-scraper](https://apify.com/thirdwatch/nobroker-scraper), [magicbricks-scraper](https://apify.com/thirdwatch/magicbricks-scraper), [acres99-scraper](https://apify.com/thirdwatch/acres99-scraper) | The five flats worth visiting, with reasons |
+| A recruiter | A company name | [linkedin-company-employees-scraper](https://apify.com/thirdwatch/linkedin-company-employees-scraper), [naukri-jobs-scraper](https://apify.com/thirdwatch/naukri-jobs-scraper) | Who they are hiring, and who just joined |
+| A D2C founder | A product category | [amazon-product-scraper](https://apify.com/thirdwatch/amazon-product-scraper), [amazon-reviews-scraper](https://apify.com/thirdwatch/amazon-reviews-scraper) | The top complaints about competitors, and the gap to build for |
+| A B2B sales rep | An industry and a city | [justdial-business-scraper](https://apify.com/thirdwatch/justdial-business-scraper), [indiamart-supplier-scraper](https://apify.com/thirdwatch/indiamart-supplier-scraper) | A ranked lead list with a reason to call each one |
+| A product manager | A product or brand name | [reddit-scraper](https://apify.com/thirdwatch/reddit-scraper) | What users love, hate, and keep asking for |
 
-That is the full lifecycle, plus everything Apify gives you for your next project. Now go build. Back
-to the top: [Build, deploy, and monetize AI agents](#build-deploy-and-monetize-ai-agents).
+### Five rules that separate a demo from a product
+
+1. **One input, in the buyer's words.** If the form needs a manual, the idea is too wide.
+2. **Tools return less.** Trim every tool result to what the model needs.
+3. **The output is a decision, not a table.** Rank, score, shortlist, or summarize.
+4. **Never invent.** Tell the model to use only what the tools returned, and to quote sources.
+5. **Cap the loop.** Set a recursion limit so a confused agent cannot spend without end.
 
 ---
 
 ## Resources
 
-Everything linked across the steps, grouped for quick reference.
-
-### Platform and Actors
-
-- [The Apify platform](https://docs.apify.com/platform)
-- [Actors overview](https://docs.apify.com/platform/actors)
-- [Running Actors](https://docs.apify.com/platform/actors/running) and
-  [Actors in Store](https://docs.apify.com/platform/actors/running/actors-in-store)
-- [Apify Store](https://apify.com/store)
-
-### CLI and SDKs
-
-- [Apify CLI](https://docs.apify.com/cli/) -
-  [installation](https://docs.apify.com/cli/docs/installation),
-  [command reference](https://docs.apify.com/cli/docs/reference)
-- [Apify SDK for Python](https://docs.apify.com/sdk/python)
-- [Apify client for Python](https://docs.apify.com/api/client/python/)
-- [Actor templates](https://apify.com/templates)
-
-### Actor definition and storage
-
-- [Actor definition](https://docs.apify.com/platform/actors/development/actor-definition)
-- [actor.json](https://docs.apify.com/platform/actors/development/actor-definition/actor-json)
-- [Input schema](https://docs.apify.com/platform/actors/development/actor-definition/input-schema)
-  and [secret inputs](https://docs.apify.com/platform/actors/development/actor-definition/input-schema/secret-input)
-- [Dataset schema](https://docs.apify.com/platform/actors/development/actor-definition/dataset-schema)
-- [Dockerfile](https://docs.apify.com/platform/actors/development/actor-definition/dockerfile)
-- [Storage](https://docs.apify.com/platform/storage) and
-  [datasets](https://docs.apify.com/platform/storage/dataset)
-- [Environment variables and secrets](https://docs.apify.com/platform/actors/development/programming-interface/environment-variables)
-
-### Running over the API and MCP
-
-- [Apify MCP server](https://docs.apify.com/platform/integrations/mcp) (`https://mcp.apify.com`) -
-  use Store Actors as tools, and expose your own Actor to MCP clients
-- [API integration](https://docs.apify.com/platform/integrations/api)
-- [Run Actor and retrieve data via API](https://docs.apify.com/academy/api/run-actor-and-retrieve-data-via-api)
-- [Apify API reference](https://docs.apify.com/api/v2)
-
-### Publishing and monetization
-
-- [Publishing overview](https://docs.apify.com/platform/actors/publishing)
-- [Publish your Actor](https://docs.apify.com/platform/actors/publishing/publish)
-- [Monetize your Actor](https://docs.apify.com/platform/actors/publishing/monetize)
-- [Set up monetization](https://docs.apify.com/platform/actors/monetize/set-up-monetization)
-- [Pay per event](https://docs.apify.com/platform/actors/publishing/monetize/pay-per-event)
-- [Pricing models](https://docs.apify.com/platform/actors/running/actors-in-store#pricing-models)
-
-### AI agents and tooling
-
-- [Apify agent skills](https://github.com/apify/agent-skills) and the
-  [apify-actor-development skill](https://github.com/apify/agent-skills/blob/main/skills/apify-actor-development/SKILL.md)
-- [LangGraph](https://langchain-ai.github.io/langgraph/)
-- [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/)
+- [Apify platform](https://docs.apify.com/platform), [Actors](https://docs.apify.com/platform/actors),
+  and [Apify Store](https://apify.com/store)
+- [Apify CLI](https://docs.apify.com/cli/), [Apify SDK for Python](https://docs.apify.com/sdk/python),
+  and [Apify client for Python](https://docs.apify.com/api/client/python/)
 - [Apify OpenRouter proxy](https://apify.com/apify/openrouter) and
   [OpenRouter models](https://openrouter.ai/models)
-- [Claude Code](https://docs.claude.com/en/docs/claude-code)
-
-Back to the top: [Build, deploy, and monetize AI agents](#build-deploy-and-monetize-ai-agents).
+- [Apify MCP server](https://docs.apify.com/platform/integrations/mcp) (`https://mcp.apify.com`)
+- [Pay per event](https://docs.apify.com/platform/actors/publishing/monetize/pay-per-event) and
+  [Publish your Actor](https://docs.apify.com/platform/actors/publishing/publish)
+- [apify/agent-skills](https://github.com/apify/agent-skills) and
+  [LangChain agents](https://docs.langchain.com/oss/python/langchain/agents)
+- The original workshop: [apify/build-ai-agents-pycon-greece](https://github.com/apify/build-ai-agents-pycon-greece)

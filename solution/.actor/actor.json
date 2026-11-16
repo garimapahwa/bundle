@@ -1,0 +1,21 @@
+{
+	"$schema": "https://apify.com/schemas/v1/actor.ide.json",
+	"actorSpecification": 1,
+	"name": "youtube-content-brief-agent",
+	"title": "YouTube Content Brief Agent",
+	"description": "Give it a topic. It finds the most-viewed YouTube videos, reads how they open, and writes a content brief with the winning hooks, the patterns behind them, and script ideas to make next.",
+	"version": "0.1",
+	"buildTag": "latest",
+	"minMemoryMbytes": 512,
+	"maxMemoryMbytes": 1024,
+	"input": "./input_schema.json",
+	"storages": {
+		"dataset": "./dataset_schema.json",
+		"keyValueStore": "./key_value_store_schema.json"
+	},
+	"output": "./output_schema.json",
+	"meta": {
+		"templateId": "python-langgraph"
+	},
+	"dockerfile": "../Dockerfile"
+}
