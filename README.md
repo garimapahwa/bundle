@@ -3,26 +3,33 @@
 The build-along for **AI Tools that Earn**, the Apify hackathon in Bengaluru (November 22, 2026).
 
 In 40 minutes we build an AI agent, ship it to the Apify platform as an Actor, and put a price
-on it: a short intro, then about 30 minutes of building. The agent does not scrape anything itself. It uses Actors that already exist in
+on it. The agent does not scrape anything itself. It uses Actors that already exist in
 [Apify Store](https://apify.com/store) as its tools, and turns their raw data into something a
 person would pay for.
+
+We follow this page from top to bottom on screen. Keep it open: it is also your guide for the
+rest of the day.
 
 Adapted from Apify's [build-ai-agents-pycon-greece](https://github.com/apify/build-ai-agents-pycon-greece)
 workshop. Same lifecycle, new example.
 
-## What makes an Actor high-value
+## The session
 
-Every project at this hackathon is judged on one question: **would someone actually pay for
-this?** Rows of data rarely pass that test. A conclusion does.
+| Starts at | What we do | Time |
+| --- | --- | --- |
+| 0:00 | [What we build](#what-we-build), and why someone pays for it | 3 min |
+| 0:03 | [Step 1: Deploy your first Actor](#step-1-deploy-your-first-actor) | 6 min |
+| 0:09 | [Step 2: Build the agent](#step-2-build-the-agent) | 16 min |
+| 0:25 | [Step 3: Call it from anywhere](#step-3-call-it-from-anywhere) | 3 min |
+| 0:28 | [Step 4: Monetize and publish](#step-4-monetize-and-publish) | 5 min |
+| 0:33 | [Step 5: Make it better, then make it yours](#step-5-make-it-better-then-make-it-yours) | 4 min |
+| 0:37 | Questions | 3 min |
 
-| Raw data | A conclusion someone pays for |
-| --- | --- |
-| 10,000 company names | The 40 that raised funding this month, with contacts |
-| 500 YouTube search results | What is winning in your niche, and three videos to make next |
-| 300 flat listings from three sites | The five flats worth visiting this weekend, and why |
-
-That gap is what an agent fills. Store Actors fetch the data. Your agent reasons over it and
-writes the conclusion. You sell the conclusion.
+- **Not set up yet?** Do [Before the session](#before-the-session) first. It takes ten minutes.
+- **Falling behind?** Skip to [Stuck? Use the finished agent](#stuck-use-the-finished-agent). You
+  lose nothing, and you can read the code afterwards.
+- **Your run is slow, or the Wi-Fi drops?** [Real runs](#real-runs) has finished briefs from the
+  same agent.
 
 ## What we build
 
@@ -50,6 +57,46 @@ exactly that in the run log.
 
 The finished agent is in [`solution/`](./solution). You build your own copy in
 [`python-langgraph/`](./python-langgraph).
+
+### What it returns
+
+A real run for the topic `how to start investing`: 76 seconds, three tool calls, about 6 cents.
+This is an excerpt. The full brief and two more are in [`examples/`](./examples).
+
+**The gap it found**
+
+> Few open with a concrete, checkable starting action a viewer can take this week, such as the
+> first account to open, the first dollar amount, or the specific mistake that costs beginners
+> the most in year one.
+
+**How the most-viewed videos open, word for word**
+
+| Channel | Views | First words of the video |
+| --- | --- | --- |
+| Pranjal Kamra | 22,137,943 | "When 10 year old kids picked shares against them were Chartered Account, they also picked shares. There the 10-year-old kids picked better stocks and made more money." |
+| Pushkar Raj Thakur | 16,514,957 | "Well, a few days ago, I get a phone call from a relative of mine and on the phone he asks me that Pushkar, how do you invest in the stock market? I also have to invest some money." |
+| TED-Ed | 13,635,484 | "In the 1600s the Dutch East India Company employed hundreds of ships to trade gold, porcelain, spices, and silks around the globe." |
+
+**One of its three script ideas**
+
+> **I Invested \$100 For 30 Days. Here's the Exact Account, Fees, and First Trade I Made**
+>
+> Most beginner investing videos tell you what to do. I'm going to show you what I actually did
+> with a hundred dollars and the three mistakes I almost made in the first week.
+
+### Why someone pays for it
+
+Every project at this hackathon is judged on one question: **would someone actually pay for
+this?** Rows of data rarely pass that test. A conclusion does.
+
+| Raw data | A conclusion someone pays for |
+| --- | --- |
+| 10,000 company names | The 40 that raised funding this month, with contacts |
+| 500 YouTube search results | What is winning in your niche, and three videos to make next |
+| 300 flat listings from three sites | The five flats worth visiting this weekend, and why |
+
+Store Actors fetch the data. Your agent reasons over it and writes the conclusion. You sell the
+conclusion.
 
 ## Before the session
 
@@ -98,17 +145,6 @@ You need no OpenAI or Anthropic key. The agent calls its LLM through the
 > **Note:** your account must be able to run public Actors, because both the tool Actors and
 > the OpenRouter proxy are public Actors. The free plan can. The $1 Creator plan cannot, so do
 > not use a Creator-plan account for this workshop.
-
-## Scope
-
-1. [Step 1: Deploy your first Actor](#step-1-deploy-your-first-actor) (~6 min)
-2. [Step 2: Build the agent](#step-2-build-the-agent) (~16 min)
-3. [Step 3: Call it from anywhere](#step-3-call-it-from-anywhere) (~3 min)
-4. [Step 4: Monetize and publish](#step-4-monetize-and-publish) (~5 min)
-5. [Step 5: Make it yours](#step-5-make-it-yours) (the rest of the day)
-
-Falling behind? Skip to [Stuck? Use the finished agent](#stuck-use-the-finished-agent). You lose
-nothing, and you can read the code afterwards.
 
 ---
 
@@ -268,11 +304,14 @@ Then open the **Dataset** tab for the structured brief, and the **Key-value stor
 A run takes one to two minutes. Pick a topic where people talk on camera. Music-only videos
 have no transcript to read.
 
+Nothing on your screen yet? Open [Real runs](#real-runs) and read a finished brief while yours
+completes.
+
 > **Note:** pick the model on evidence, not habit. In test runs of this agent, the template's
 > default `openai/gpt-4o-mini` made an extra tool call it did not need in all three runs and
-> failed on the structured brief in two of them. `anthropic/claude-haiku-5.5` finished all four
-> of its runs and costs less per token. Change `modelName` in the input to try any other OpenRouter model, and run it more
-> than once before you trust it.
+> failed on the structured brief in two of them. `anthropic/claude-haiku-5.5` finished every
+> one of its test runs and costs less per token. Change `modelName` in the input to try any
+> other OpenRouter model, and run it more than once before you trust it.
 
 **Your project:** swap the three parts for your idea - the input, the tool Actors, and the
 output. The pattern stays the same.
@@ -410,9 +449,109 @@ pay for it?
 
 ---
 
-## Step 5: Make it yours
+## Step 5: Make it better, then make it yours
 
-You have the full lifecycle. For the hackathon, change three things and keep everything else.
+You have the full lifecycle. Now make the agent worth more, then point the same pattern at your
+own idea.
+
+**Time:** ~4 minutes in the session, then the rest of the day
+
+### 1. Give the agent more to look at
+
+YouTube shows what won over years. Short video shows what is working this week, and a short
+video has only a few seconds to hook a viewer. Add one more tool and the same agent covers both.
+
+| Add | Tool Actor | Input it needs | Output fields the agent reads |
+| --- | --- | --- | --- |
+| What is trending on TikTok | [thirdwatch/tiktok-scraper](https://apify.com/thirdwatch/tiktok-scraper) | `queries` (search terms, `@usernames`, or `#hashtags`), `searchType: "videos"`, `maxResults` | `description` (the caption), `hashtags`, `viewCount`, `likeCount`, `shareCount`, `createdAt`, `url` |
+| Which Reels work for creators who already win | [thirdwatch/instagram-reels-scraper](https://apify.com/thirdwatch/instagram-reels-scraper) | `queries` (`@usernames` or profile URLs), `maxResults` | `caption`, `hashtags`, `viewCount`, `likeCount`, `commentCount`, `timestamp`, `url` |
+
+Both return captions and counts, not the words spoken in the video. So the agent compares the
+caption hooks from short video with the spoken hooks from YouTube.
+
+A new tool is three small changes. Here they are for TikTok:
+
+1. One function in `my_actor/tools.py`. Same three moves as the other tools: build the input,
+   run the Store Actor, hand back less.
+
+   ```python
+   TIKTOK_ACTOR = 'thirdwatch/tiktok-scraper'
+
+
+   @tool
+   async def search_tiktok_videos(query: str, max_results: int = 10) -> list[dict] | str:
+       """Search TikTok and return short videos on a topic with their captions and engagement.
+
+       Args:
+           query: What to search for, written the way a viewer would type it.
+           max_results: How many videos to return (1 to 20).
+
+       Returns:
+           A list of videos, each with caption, url, creator, views, shares, hashtags, and posted.
+       """
+       run_input = {
+           'queries': [query],
+           'searchType': 'videos',
+           'maxResults': max(1, min(max_results, 20)),
+       }
+       try:
+           items = await run_store_actor(TIKTOK_ACTOR, run_input)
+       except Exception as exc:  # noqa: BLE001 - report the failure to the agent so it can react
+           return f'The TikTok search failed: {exc}. Write the brief without it.'
+
+       # Tools return less: a short caption and a few numbers, not the whole record.
+       return [
+           {
+               'caption': (item.get('description') or '')[:300],
+               'url': item.get('url'),
+               'creator': item.get('authorName'),
+               'views': item.get('viewCount'),
+               'shares': item.get('shareCount'),
+               'hashtags': (item.get('hashtags') or [])[:8],
+               'posted': (item.get('createdAt') or '')[:10],
+           }
+           for item in items
+       ]
+   ```
+
+2. In `my_actor/main.py`, import it, add it to the tool list, and add one step to the system
+   prompt so the agent knows when to call it:
+
+   ```python
+   tools = [search_youtube_videos, get_video_openings, search_tiktok_videos]
+   ```
+
+   ```
+   Before you write the brief, call search_tiktok_videos once with the topic to see what is
+   working in short video right now.
+   ```
+
+3. One field in `ContentBrief` in `my_actor/models.py`, so the new finding has a place in the
+   output:
+
+   ```python
+   short_video_trends: list[str] = Field(
+       description='Two or three things the most-viewed TikTok videos do in their captions, each naming the creator.',
+   )
+   ```
+
+Then `apify push` and run it. The log shows a third tool call, and the dataset item has the new
+field.
+
+Every tool call is paid for by whoever runs your agent, so open the **Pricing** tab of an Actor
+in Apify Store before you add it as a tool. In a test run, the TikTok tool added about 4 cents
+for 9 videos, which took one brief from about 6 cents to about 10.
+
+### 2. Make it something people run every week
+
+A creator needs this brief every week, not once. Run the Actor on a
+[schedule](https://docs.apify.com/platform/schedules), keep last week's brief in a named
+[key-value store](https://docs.apify.com/platform/storage/key-value-store), and report what
+changed. Repeat use is what turns a demo into revenue.
+
+### 3. Make it yours
+
+For the hackathon, change three things and keep everything else.
 
 | Swap | In the workshop | In your project |
 | --- | --- | --- |
@@ -420,12 +559,12 @@ You have the full lifecycle. For the hackathon, change three things and keep eve
 | The tools | Two YouTube Actors | Any Actors from [Apify Store](https://apify.com/store) |
 | The output | A content brief | The conclusion your buyer pays for |
 
-### Start from the buyer
+#### Start from the buyer
 
 Before you write a prompt, finish this sentence: "**[A specific person]** pays for this because
 it saves them **[a specific job]**." If you cannot, change the idea, not the code.
 
-### Idea starters
+#### Idea starters
 
 Each one is the same agent with different tools. All of these tool Actors are live in Apify
 Store.
@@ -438,13 +577,30 @@ Store.
 | A B2B sales rep | An industry and a city | [justdial-business-scraper](https://apify.com/thirdwatch/justdial-business-scraper), [indiamart-supplier-scraper](https://apify.com/thirdwatch/indiamart-supplier-scraper) | A ranked lead list with a reason to call each one |
 | A product manager | A product or brand name | [reddit-scraper](https://apify.com/thirdwatch/reddit-scraper) | What users love, hate, and keep asking for |
 
-### Five rules that separate a demo from a product
+#### Five rules that separate a demo from a product
 
 1. **One input, in the buyer's words.** If the form needs a manual, the idea is too wide.
 2. **Tools return less.** Trim every tool result to what the model needs.
 3. **The output is a decision, not a table.** Rank, score, shortlist, or summarize.
 4. **Never invent.** Tell the model to use only what the tools returned, and to quote sources.
 5. **Cap the loop.** Set a recursion limit so a confused agent cannot spend without end.
+
+---
+
+## Real runs
+
+What the finished agent in [`solution/`](./solution) returned for three topics. Nothing was
+edited: each brief is the `brief.md` from the run's key-value store, and each JSON file is the
+run's one dataset item.
+
+| Input topic | Run time | The brief | The dataset item |
+| --- | --- | --- | --- |
+| `how to build AI agents` | 65 s | [Read the brief](./examples/how-to-build-ai-agents.md) | [JSON](./examples/how-to-build-ai-agents.json) |
+| `how to start investing` | 76 s | [Read the brief](./examples/how-to-start-investing.md) | [JSON](./examples/how-to-start-investing.json) |
+| `how to learn coding` | 105 s | [Read the brief](./examples/how-to-learn-coding.md) | [JSON](./examples/how-to-learn-coding.json) |
+
+All three ran on `anthropic/claude-haiku-5.5` through the Apify OpenRouter proxy. Each made
+three tool calls: one search, one read of the openings, and the structured brief.
 
 ---
 
