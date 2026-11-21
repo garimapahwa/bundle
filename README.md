@@ -217,7 +217,7 @@ as the model:
 
 ```python
 llm = ChatOpenAI(
-    model='anthropic/claude-haiku-5.5',
+    model='deepseek/deepseek-v4.1-flash',
     base_url='https://openrouter.apify.actor/api/v1',
     api_key=os.environ['APIFY_TOKEN'],
 )
@@ -245,7 +245,7 @@ Open the repo in your AI coding tool and give it this prompt:
 Turn the Actor in python-langgraph/ into a YouTube content brief agent.
 
 Input: a "topic" string (required) and "maxVideos" (integer, default 5). Keep "modelName"
-and "debug", and change the default model to "anthropic/claude-haiku-5.5".
+and "debug", and change the default model to "deepseek/deepseek-v4.1-flash".
 
 Tools (replace the existing ones in my_actor/tools.py). Each tool runs a Store Actor with
 Actor.apify_client and reads its dataset:
@@ -307,11 +307,13 @@ have no transcript to read.
 Nothing on your screen yet? Open [Real runs](#real-runs) and read a finished brief while yours
 completes.
 
-> **Note:** pick the model on evidence, not habit. In test runs of this agent, the template's
-> default `openai/gpt-4o-mini` made an extra tool call it did not need in all three runs and
-> failed on the structured brief in two of them. `anthropic/claude-haiku-5.5` finished every
-> one of its test runs and costs less per token. Change `modelName` in the input to try any
-> other OpenRouter model, and run it more than once before you trust it.
+> **Note:** pick the model on evidence, not habit. The agent defaults to
+> `deepseek/deepseek-v4.1-flash`: in test runs it finished every brief in under 80 seconds,
+> quoted real hooks, and costs about half as much per token as `anthropic/claude-haiku-5.5`.
+> `z-ai/glm-5.3-flash` also worked and is cheaper still. `deepseek/deepseek-v4-flash` and
+> `z-ai/glm-5.3` looped or failed, and the proxy now refuses `openai/gpt-4o-mini` with a 404.
+> Change `modelName` in the input to try any other OpenRouter model, and run it more than once
+> before you trust it.
 
 **Your project:** swap the three parts for your idea - the input, the tool Actors, and the
 output. The pattern stays the same.

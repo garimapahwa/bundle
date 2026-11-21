@@ -17,8 +17,8 @@
             "type": "string",
             "description": "OpenRouter model slug (see https://openrouter.ai/models). The model is called through the Apify OpenRouter proxy, so no provider API key is needed.",
             "editor": "textfield",
-            "default": "openai/gpt-4o-mini",
-            "prefill": "openai/gpt-4o-mini"
+            "default": "deepseek/deepseek-v4.1-flash",
+            "prefill": "deepseek/deepseek-v4.1-flash"
         },
         "debug": {
             "title": "Debug",

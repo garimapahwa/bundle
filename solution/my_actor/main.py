@@ -59,7 +59,7 @@ async def main() -> None:
             raise ValueError(msg)
 
         max_videos = int(actor_input.get('maxVideos') or 5)
-        model_name = actor_input.get('modelName') or 'anthropic/claude-haiku-5.5'
+        model_name = actor_input.get('modelName') or 'deepseek/deepseek-v4.1-flash'
         if actor_input.get('debug', False):
             Actor.log.setLevel(logging.DEBUG)
 

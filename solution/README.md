@@ -21,7 +21,7 @@ ReAct loop: reason, act, observe, repeat.
 | --- | --- | --- |
 | `topic` | string, required | The topic or niche, written the way a viewer would search for it |
 | `maxVideos` | integer, default 5 | How many top videos the agent reads the opening of |
-| `modelName` | string, default `anthropic/claude-haiku-5.5` | Any [OpenRouter model slug](https://openrouter.ai/models) |
+| `modelName` | string, default `deepseek/deepseek-v4.1-flash` | Any [OpenRouter model slug](https://openrouter.ai/models) |
 | `debug` | boolean, default false | Writes the full tool results to the log |
 
 ## Output

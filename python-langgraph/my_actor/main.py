@@ -39,7 +39,7 @@ async def main() -> None:
             msg = 'Missing "query" attribute in input!'
             raise ValueError(msg)
 
-        model_name = actor_input.get('modelName', 'openai/gpt-4o-mini')
+        model_name = actor_input.get('modelName', 'deepseek/deepseek-v4.1-flash')
         if actor_input.get('debug', False):
             Actor.log.setLevel(logging.DEBUG)
 
