@@ -308,7 +308,7 @@ Nothing on your screen yet? Open [Real runs](#real-runs) and read a finished bri
 completes.
 
 > **Note:** pick the model on evidence, not habit. The agent defaults to
-> `deepseek/deepseek-v4.1-flash`: in test runs it finished every brief in under 80 seconds,
+> `deepseek/deepseek-v4.1-flash`: it finished all four of its test briefs (78 to 117 seconds),
 > quoted real hooks, and costs about half as much per token as `anthropic/claude-haiku-5.5`.
 > `z-ai/glm-5.3-flash` also worked and is cheaper still. `deepseek/deepseek-v4-flash` and
 > `z-ai/glm-5.3` looped or failed, and the proxy now refuses `openai/gpt-4o-mini` with a 404.
