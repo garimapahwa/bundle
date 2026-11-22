@@ -50,6 +50,7 @@ class RunState:
     peers: list[dict] = field(default_factory=list)  # {label, url, stats, categories, piiCategories}
     peer_failures: int = 0
     peer_searches: int = 0
+    anonymize_peers: bool = False
     benchmark_calls: int = 0
     tool_calls: list[str] = field(default_factory=list)
 
@@ -254,13 +255,13 @@ async def benchmark_peers(urls: list[str]) -> dict | str:
     """Run the same capture and audit on 3 to 5 peer websites, and compare.
 
     Public pages only, no login, no probing. Only counts are kept for peers (never their field
-    names or values), and peers are labelled Peer A to Peer E in the report. Call it once.
+    names or values). Peers are named by their site, or Peer A to Peer E when anonymized. Call it once.
 
     Args:
         urls: 3 to 5 peer homepages, for example ["https://zerodha.com", "https://upstox.com"].
 
     Returns:
-        Each peer's anonymous counts and score, the industry average, and the target's rank.
+        Each peer's counts and score, the industry average, and the target's rank.
     """
     if STATE.audit is None:
         return 'Audit the target first: call fetchSite, then auditExposure.'
@@ -279,7 +280,7 @@ async def benchmark_peers(urls: list[str]) -> dict | str:
     log_call('benchmarkPeers', STATE.host, f'{len(picked)} peers, {PEER_PAGES} pages each')
 
     for number, url in enumerate(picked):
-        label = PEER_LABELS[len(STATE.peers)]
+        label = PEER_LABELS[len(STATE.peers)] if STATE.anonymize_peers else host_name(url)
         Actor.log.info('[agent] benchmarkPeers: scanning %s as %s', host_name(url), label)
         await Actor.set_status_message(f'benchmarkPeers: scanning peer {number + 1} of {len(picked)}')
         capture, _source = await capture_site(url, PEER_PAGES)
@@ -290,7 +291,7 @@ async def benchmark_peers(urls: list[str]) -> dict | str:
         STATE.peers.append(
             {
                 'label': label,
-                'url': url,  # kept for the log only; never written to the report or dataset
+                'url': url,
                 'stats': audit.stats,
                 'categories': {r['category'] for r in audit.rows},
                 'piiCategories': {r['pii'] for r in audit.rows if r.get('pii')},
@@ -300,7 +301,7 @@ async def benchmark_peers(urls: list[str]) -> dict | str:
 
 
 def benchmark_summary() -> dict:
-    """Anonymous peer counts, the industry average, and the target's rank (1 = least exposed)."""
+    """Peer counts (never their field details), the industry average, and the target's rank (1 = least exposed)."""
     you = STATE.audit.stats if STATE.audit else {}
     peers = [{'label': p['label'], **{k: p['stats'][k] for k in ('exposureScore', 'overexposedPerPage', 'high', 'apiResponses')}} for p in STATE.peers]
     if not peers:

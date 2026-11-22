@@ -151,7 +151,8 @@ def report_to_html(report: AuditReport) -> str:
     )
     if report.peers and avg:
         better = 'less' if score <= (avg.get('exposureScore') or 0) else 'more'
-        compare = f'You are <strong>{better} exposed</strong> than the average of {len(report.peers)} similar sites. Lower is better.'
+        names = ', '.join(e(p.label) for p in report.peers)
+        compare = f'Compared with {names}: you are <strong>{better} exposed</strong> than their average. Lower is better.'
     else:
         compare = ''
     caveats = ''.join(f'<li>{e(c)}</li>' for c in report.caveats)
@@ -220,8 +221,14 @@ code {{ font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; background:va
 .fill {{ display:block; height:100%; background:#9aa0a6; border-radius:6px; }}
 .bar.you .fill {{ background:var(--accent); }} .bar.you .bl {{ font-weight:700; }}
 .bv {{ text-align:right; font-variant-numeric:tabular-nums; }}
+.flow {{ list-style:none; padding:0; margin:8px 0 0; display:grid; grid-template-columns:repeat(5,1fr); gap:8px; counter-reset:s; }}
+.flow li {{ position:relative; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; font-size:13px; line-height:1.4; }}
+.flow li b {{ display:inline-grid; place-items:center; width:22px; height:22px; border-radius:50%; background:var(--accent); color:#fff; font-size:12px; margin-bottom:6px; }}
+.flow li span {{ display:block; }}
+.flow li:not(:last-child)::after {{ content:"→"; position:absolute; right:-9px; top:50%; transform:translateY(-50%); color:var(--muted); background:var(--bg); font-size:13px; z-index:1; }}
 .about {{ margin-top:30px; }}
 .about .body {{ padding-left:16px; color:var(--muted); font-size:14px; }}
+@media (max-width:720px) {{ .flow {{ grid-template-columns:1fr; }} .flow li:not(:last-child)::after {{ content:"↓"; right:auto; left:50%; top:auto; bottom:-12px; transform:translateX(-50%); }} }}
 @media (max-width:560px) {{ .hero {{ flex-direction:column; align-items:flex-start; }} .body {{ padding-left:16px; }} .bar {{ grid-template-columns:90px 1fr 34px; }} }}
 </style></head>
 <body><main>
@@ -240,6 +247,16 @@ code {{ font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; background:va
 </div>
 <div class="summary">{e(report.summary)}</div>
 
+<h2>How we checked</h2>
+<p class="sub">An AI agent ran these steps on your site, then the same steps on {len(report.peers) or 'no'} similar site{'' if len(report.peers) == 1 else 's'}.</p>
+<ol class="flow">
+  <li><b>1</b><span>Open your public pages in a real browser</span></li>
+  <li><b>2</b><span>Capture every piece of data the pages load ({e(_num(report.stats.get('apiResponses', 0)))} API responses)</span></li>
+  <li><b>3</b><span>Compare it with what the page actually shows ({e(_num(report.stats.get('fieldsChecked', 0)))} fields checked)</span></li>
+  <li><b>4</b><span>Scan the code for keys, internal addresses, and unreleased features</span></li>
+  <li><b>5</b><span>Score it, and compare with {e(', '.join(p.label for p in report.peers) or 'peers')}</span></li>
+</ol>
+
 <h2>Fix these first</h2>
 <p class="sub">Click a fix to see what to do and why. Tick the box when it is done.</p>
 <ol class="fixes">{fixes}</ol>
@@ -257,7 +274,7 @@ code {{ font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace; background:va
 {f'<h2>How you compare</h2><p class="sub">{compare}</p><div class="bench">{bench}</div>' if report.peers else ''}
 
 <details class="about"><summary>About this audit</summary><div class="body">
-<p>We loaded your public pages like a visitor would, compared every piece of data your site sends with what the page actually shows, and checked your code for keys, internal addresses, and unreleased features. The same check ran on similar sites, shown only as Peer A, B, C.</p>
+<p>We loaded your public pages like a visitor would, compared every piece of data your site sends with what the page actually shows, and checked your code for keys, internal addresses, and unreleased features. The same check ran on similar sites; for them we keep only counts and scores, never their individual findings.</p>
 <p>No login, no probing, and no protections bypassed. Data values were never stored. This is not legal advice.</p>
 <ul>{caveats}</ul></div></details>
 </main></body></html>"""

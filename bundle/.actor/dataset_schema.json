@@ -42,7 +42,7 @@
             },
             "peer_benchmark": {
                 "type": "string",
-                "description": "How peers compare on this kind of finding, anonymously",
+                "description": "How peers compare on this kind of finding (counts only)",
                 "nullable": true,
                 "example": "You 4.5 vs industry 2.1 unused fields per page; 1 of 4 peers send phone too"
             },

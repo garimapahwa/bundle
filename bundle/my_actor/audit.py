@@ -135,7 +135,7 @@ def _row(finding: str, category: str, severity: str, field_or_key: str, evidence
 
 
 def benchmark_text(row: dict, you: dict, peers: list[dict]) -> str:
-    """A short, anonymous comparison with the peers for this kind of finding."""
+    """A short comparison with the peers for this kind of finding (counts only)."""
     if not peers:
         return 'No peers compared'
     n = len(peers)

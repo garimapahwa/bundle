@@ -22,7 +22,7 @@
         },
         "report": {
             "title": "Report (JSON)",
-            "description": "The full report: score, rank, industry average, anonymous peers, top fixes, and stats",
+            "description": "The full report: score, rank, industry average, peers with their scores, top fixes, and stats",
             "key": "REPORT",
             "contentTypes": [
                 "application/json"

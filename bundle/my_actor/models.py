@@ -38,7 +38,7 @@ class AuditDraft(BaseModel):
 
 
 class PeerStat(BaseModel):
-    """One peer, anonymous."""
+    """One peer: its site (or Peer A to E when anonymized) and its counts only."""
 
     label: str
     exposure_score: int

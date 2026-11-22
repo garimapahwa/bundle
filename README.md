@@ -32,9 +32,65 @@ flowchart LR
     A -- fetchSite --> F[Full Chromium / Firefox<br/>API responses, rendered DOM,<br/>JS, flag configs, storage]
     A -- auditExposure --> X[API fields vs what the page shows<br/>PII = high severity<br/>keys, internal hosts, source maps, flags]
     A -- findPeers --> G[apify/google-search-scraper]
-    A -- benchmarkPeers --> B[Same audit on 3-5 peers<br/>anonymous counts only]
+    A -- benchmarkPeers --> B[Same audit on 3-5 peers<br/>counts and scores only]
     A --> R[Findings table<br/>Report: score, rank, top 5 fixes]
 ```
+
+### The agent loop
+
+The LLM decides which tool to call next. Each call is one step in the run log.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant A as Bundle agent (LLM)
+    participant T as Tools
+    participant G as Google (Apify Store Actor)
+    U->>A: Website + industry
+    A->>T: fetchSite(site)
+    T-->>A: 6 API responses, 36 JS files
+    A->>T: auditExposure()
+    T-->>A: score 25, findings (paths only, no values)
+    alt No peers given
+        A->>G: findPeers("<industry> companies like <site>")
+        G-->>A: search results
+        Note over A: picks 3-5 real competitors
+    end
+    A->>T: benchmarkPeers([peer sites])
+    T-->>A: peer scores, industry average, rank
+    A-->>U: Report: verdict, top 5 fixes, benchmark
+```
+
+### The core check: what the API sends vs what the page shows
+
+```mermaid
+flowchart TD
+    R[API response the page loaded] --> F[Flatten to field paths<br/>data.user.mobile, items.price]
+    D[Text and attributes the page renders] --> C
+    F --> C{Is the value<br/>shown on the page?}
+    C -- yes --> OK[Fine: the page needs it]
+    C -- no --> P{Looks like personal data?<br/>PAN, Aadhaar, phone, email,<br/>DOB, account, internal ID, risk score}
+    P -- yes --> H[High severity]
+    P -- no --> L[Low: unused field]
+    H --> X[Finding stores the path and kind,<br/>never the value]
+    L --> X
+```
+
+### How the score is built
+
+```mermaid
+flowchart LR
+    H[High findings x 15] --> S[Exposure score<br/>0-100, lower is better]
+    M[Medium findings x 5] --> S
+    W[Low findings x 1<br/>capped at 20] --> S
+    S --> V{Verdict}
+    V -- under 20 --> G[Looking good]
+    V -- 20 to 49 --> N[Needs attention]
+    V -- 50+ --> K[At risk]
+```
+
+The same formula scores every peer, so the rank compares like with like.
 
 - **The agent decides.** A LangChain `create_agent` loop picks its own tools: whether to search
   for peers, which ones to benchmark, and when it has enough to write the report. Every call is
@@ -46,7 +102,8 @@ flowchart LR
 - **Numbers from code, words from the AI.** The score, rank, and industry average are computed in
   code. The AI writes the fixes, and can only cite findings the code actually made.
 - **Privacy by design.** Field values never leave the check: they are not stored, logged, or sent
-  to the model. Peers are anonymous counts.
+  to the model. Peers are named, but only their counts and scores appear, never their individual
+  findings (or tick **Anonymize peers** to show them as Peer A, B, C).
 - **Honest loading.** Sites are opened with a normal full browser, directly first, then via Apify
   Proxy (residential), then Firefox. Bot checks and CAPTCHAs are never bypassed.
 - **The AI model** runs through the [Apify OpenRouter proxy](https://apify.com/apify/openrouter),
@@ -98,13 +155,14 @@ Then open the Actor in Apify Console, enter a website and an industry, and click
 
 1. Start an audit with a website, an industry, and no peers. In the **Log**, watch the agent call
    `fetchSite`, `auditExposure`, `findPeers` (Google), and `benchmarkPeers`.
-2. Open **Output**: the **Findings** table, then **Report (web page)** with the score, the rank,
-   the benchmark chart, and the top 5 fixes.
+2. Open **Output**, then **Report (web page)**: the verdict and score dial, the "How we checked"
+   steps, the fix checklist, the findings you can filter by severity, and the chart against the
+   named competitors.
 3. Run it again with **Use saved captures** on: the same audit in about a minute, for $0.03.
 
 ## Ethics and limits
 
 Audit sites you own or are allowed to assess. Public pages only: no login, no probing, and no
-bypassing of bot checks. Field values are never stored, and peers are shown only as anonymous
-counts. Logged-in areas are out of scope, so a clean result is not a clean bill of health.
+bypassing of bot checks. Field values are never stored, and peers appear only as counts and
+scores. Logged-in areas are out of scope, so a clean result is not a clean bill of health.
 DPDP notes are context, not legal advice.

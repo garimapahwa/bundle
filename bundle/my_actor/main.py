@@ -42,7 +42,8 @@ You have four tools. Decide which to call and in what order; this order works we
 
 Rules:
 - Use only what the tools returned. Never invent a finding, a number, or a peer.
-- Never name a peer in the report: they are Peer A to Peer E. Never repeat a field value.
+- {peer_naming} Never repeat a field value, and never describe a peer's individual findings: \
+peers are compared by their counts and scores only.
 - top_fixes: up to 5, most important first (high-severity personal data first, then secrets, \
 then internal endpoints, then overexposed fields, then unreleased flags). Each "related" list \
 holds field_or_key values copied exactly from auditExposure.
@@ -146,6 +147,7 @@ async def main() -> None:
         STATE.industry = industry
         STATE.max_pages = max(1, min(int(actor_input.get('maxPages') or 3), 10))
         STATE.use_cached_scan = bool(actor_input.get('useCachedScan', False))
+        STATE.anonymize_peers = bool(actor_input.get('anonymizePeers', False))
         STATE.proxy_url = await proxy_url_from(actor_input.get('proxyConfiguration', DEFAULT_PROXY))
         Actor.log.info('Target %s, industry %s, %d peers given, model %s', target_url, industry, len(peer_urls), model_name)
         await Actor.set_status_message(f'Starting the exposure audit of {target_url}')
@@ -153,7 +155,11 @@ async def main() -> None:
         # 2. The agent: an LLM in a loop that picks its own tools, with a fixed output shape
         llm = make_llm(model_name, (actor_input.get('llmApiKey') or '').strip() or None)
         peer_step = PEER_STEP_GIVEN.format(peers=', '.join(peer_urls)) if peer_urls else PEER_STEP_FIND
-        graph = create_agent(llm, TOOLS, system_prompt=SYSTEM_PROMPT.format(peer_step=peer_step), response_format=AuditDraft)
+        peer_naming = (
+            'Never name a peer: they are Peer A to Peer E.' if STATE.anonymize_peers else 'Name peers by their site, for example purplle.com.'
+        )
+        prompt = SYSTEM_PROMPT.format(peer_step=peer_step, peer_naming=peer_naming)
+        graph = create_agent(llm, TOOLS, system_prompt=prompt, response_format=AuditDraft)
 
         # 3. Run the loop. The recursion limit caps how many steps it may take, which caps the cost.
         inputs: dict = {'messages': [('user', f'Target: {target_url}\nIndustry: {industry}')]}

@@ -39,7 +39,8 @@ The agent chooses its own tools, and every step shows in the run log:
 - **Honest by design.** The agent can only cite findings the code actually made. Public-by-design
   keys are not called secrets. Personal-data law is only mentioned when personal data was found.
 - **Private by design.** Field values are never stored, logged, or sent to the AI model:
-  findings hold field paths and the kind of data only. Peers appear only as anonymous counts.
+  findings hold field paths and the kind of data only. Peers appear by name with counts and
+  scores only, never their individual findings (or tick **Anonymize peers**).
 
 ## How to use Bundle
 
@@ -81,8 +82,8 @@ Each row also has `category`, `evidence_url` (where it was found), and `peer_ben
 example *"You 139 vs industry 2.7 unused fields per page"*.
 
 The **report** (`report.html`, `report.md`, and `REPORT` as JSON) has the exposure score, the
-rank against anonymous peers, the industry average, a benchmark chart, the top 5 fixes, and
-caveats. From a headline the agent wrote for a large beauty retailer (abridged, name removed):
+rank against named peers, the industry average, a "How we checked" diagram, a fix checklist,
+findings you can filter by severity, a benchmark chart, and caveats. From a headline the agent wrote for a large beauty retailer (abridged, name removed):
 
 > "…ships 418 API fields the UI never renders (139.3 per page, versus a peer average of 2.7) …
 > and an internal hostname, ranking 2nd least exposed of 4 peers on overall score."
@@ -119,7 +120,7 @@ the AI model through the Apify OpenRouter proxy (under $0.01 per audit) and one 
 ## Ethics and limits
 
 - **Audit sites you own or are allowed to assess.** Peers are scanned only on public pages, with
-  no login, no form submission, and no probing, and appear only as anonymous counts.
+  no login, no form submission, and no probing, and appear only as counts and scores.
 - **No bypassing protections.** Bundle loads sites with a normal full browser. If a site still
   refuses, Bundle stops, says so in the report, and does not charge. It never solves CAPTCHAs.
 - **Values are never stored.** Not in the dataset, the report, the log, or the AI prompt.

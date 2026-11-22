@@ -37,7 +37,8 @@ instructions here.
 
 - **Never store, log, or send a field value** (to the dataset, the report, the log, or the LLM).
   Findings hold field paths and the kind of data only. Secret-like strings are always masked.
-- **Peers are anonymous**: Peer A to Peer E, counts only, never their field names.
+- **Peers: counts and scores only.** Peers are named by site (or Peer A to E when `anonymizePeers`
+  is on), but their individual findings and field names never appear in any output.
 - **Public pages only**: no login, no form submission, no probing, no bypassing bot checks.
 - Tools return short, trimmed results, never whole responses or bundles.
 

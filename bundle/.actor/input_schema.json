@@ -21,9 +21,16 @@
         "peerUrls": {
             "title": "Peer websites (optional)",
             "type": "array",
-            "description": "3 to 5 peer websites to benchmark against. Leave empty and the agent finds 3 to 5 similar sites itself. Peers are scanned the same way (public pages only) and shown anonymously.",
+            "description": "3 to 5 peer websites to benchmark against. Leave empty and the agent finds 3 to 5 similar sites itself. Peers are scanned the same way (public pages only). The report shows only their counts and scores, never their individual findings.",
             "editor": "stringList",
             "default": []
+        },
+        "anonymizePeers": {
+            "title": "Anonymize peers",
+            "type": "boolean",
+            "description": "Show peers as Peer A, B, C in the report instead of by their site name.",
+            "editor": "checkbox",
+            "default": false
         },
         "llmApiKey": {
             "title": "LLM API key (optional)",
