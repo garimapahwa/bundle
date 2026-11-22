@@ -177,7 +177,7 @@ def group_rows(rows: list[dict]) -> list[dict]:
 def _leaf(path: str) -> str:
     """The last part of a field path: result.items[].inventory_id -> inventory_id."""
     parts = [p for p in re.split(r'[.\[\]{}]+', path) if p]
-    return parts[-1] if parts else path
+    return parts[-1] if parts else 'list values'
 
 
 def _examples(names: list[str], limit: int = 4) -> str:
