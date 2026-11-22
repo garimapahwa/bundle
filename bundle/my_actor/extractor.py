@@ -298,6 +298,14 @@ def registrable_domain(host: str) -> str:
     return '.'.join(labels[-2:])
 
 
+def same_org(host: str, site_domain: str) -> bool:
+    """True when a host belongs to the same company: matiks.org and api.matiks.in are matiks.com's own."""
+    if not host or not site_domain:
+        return False
+    a, b = registrable_domain(host), registrable_domain(site_domain)
+    return a == b or (a.split('.')[0] == b.split('.')[0] and len(a.split('.')[0]) >= 4)
+
+
 def host_of(url: str) -> str:
     """Return the lowercase hostname of a URL, or '' if there is none."""
     try:
@@ -315,7 +323,7 @@ def is_third_party_script(url: str, site_domain: str = '') -> bool:
     host = host_of(url)
     if not host:
         return False
-    if site_domain and registrable_domain(host) == registrable_domain(site_domain):
+    if site_domain and same_org(host, site_domain):
         return False
     return _host_matches(host, THIRD_PARTY_SCRIPT_HOSTS)
 
@@ -457,7 +465,7 @@ def classify_url(url: str, source: str, context: str, site_domain: str) -> dict 
     host = host_of(url)
     if not host or '.' not in host:
         return None
-    if site_domain and registrable_domain(host) == registrable_domain(site_domain):
+    if site_domain and same_org(host, site_domain):
         path = urlsplit(url if '://' in url else f'https:{url}').path or '/'
         if API_PATH.search(path) or host.split('.')[0] in {'api', 'apis', 'gateway', 'gw', 'bff'}:
             signal = classify_route(path, source, context)

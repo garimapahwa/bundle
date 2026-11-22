@@ -102,7 +102,7 @@ def make_llm(model_name: str, llm_api_key: str | None) -> ChatOpenAI:
 
 async def save_blocked_report(target_url: str) -> None:
     """When a site cannot be loaded, still leave a report that says so, so Output is never empty."""
-    tried = 'full Chromium via Apify Proxy, full Chromium without a proxy, and Firefox' if STATE.proxy_url else 'full Chromium and Firefox'
+    tried = 'Chromium and Firefox, directly and through Apify Proxy' if STATE.proxy_url else 'Chromium and Firefox'
     message = (
         f'Bundle could not load {target_url}. It tried {tried}, and the site refused all of them. '
         'Bundle does not solve CAPTCHAs or bypass bot protection, so there is nothing to audit. '

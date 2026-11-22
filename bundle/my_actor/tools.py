@@ -95,15 +95,14 @@ async def save_capture(host: str, capture: Capture) -> None:
 
 
 def load_attempts() -> list[tuple[str, str | None]]:
-    """How to load a site, cheapest first: full Chromium direct, then via Apify Proxy, then Firefox.
+    """How to load a site, cheapest first: Chromium, then Firefox, directly; then both via Apify Proxy.
 
     Most sites load directly. Residential proxy traffic is the biggest cost of a run, so it is
     used only when a site refuses the direct connection.
     """
-    attempts: list[tuple[str, str | None]] = [('chromium', None)]
+    attempts: list[tuple[str, str | None]] = [('chromium', None), ('firefox', None)]
     if STATE.proxy_url:
-        attempts.append(('chromium', STATE.proxy_url))
-    attempts.append(('firefox', STATE.proxy_url))
+        attempts += [('chromium', STATE.proxy_url), ('firefox', STATE.proxy_url)]
     return attempts
 
 
@@ -124,13 +123,13 @@ async def capture_site(url: str, max_pages: int) -> tuple[Capture | None, str]:
         except Exception as exc:  # noqa: BLE001 - try the next option, then the saved copy
             Actor.log.warning('Could not load %s with %s: %s', host, label, str(exc).splitlines()[0][:160])
             capture = None
-        if capture and (capture.scripts or capture.api_responses):
+        if capture and capture.loaded:
             Actor.log.info('[agent] loaded %s with %s', host, label)
             break
     if capture is None:
         cached = await load_capture(host)
         return (cached, 'cache') if cached else (None, '')
-    if not capture.scripts and not capture.api_responses:
+    if not capture.loaded:
         Actor.log.warning('%s loaded no first-party code (probably a bot check). Bundle does not bypass protections.', host)
         cached = await load_capture(host)
         return (cached, 'cache') if cached else (None, '')

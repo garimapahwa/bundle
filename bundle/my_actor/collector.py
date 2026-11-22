@@ -16,6 +16,8 @@ yields fewer captures.
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import json
 import re
 from collections import Counter
 from dataclasses import dataclass, field
@@ -24,7 +26,7 @@ from urllib.parse import urljoin, urlsplit
 from apify import Actor
 from playwright.async_api import Browser, BrowserContext, Page, Response, async_playwright
 
-from .extractor import SOURCE_MAP_COMMENT, host_of, is_library_file, is_third_party_script, registrable_domain
+from .extractor import SOURCE_MAP_COMMENT, host_of, is_library_file, is_third_party_script, registrable_domain, same_org
 
 USER_AGENT = (
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) '
@@ -51,6 +53,9 @@ FLAG_PATH_HINTS = (
     '/features', '/flags', '/feature-flags', '/featureflags', '/feature_flags', '/config',
     '/remote-config', '/remoteconfig', '/experiments', '/decide', '/toggles',
 )
+
+# Titles of bot-check and block pages (Cloudflare, Akamai, AWS WAF, and others)
+CHECK_PAGE = re.compile(r'just a moment|attention required|access denied|verify you are human|are you a robot|request blocked|checking your browser|^\s*403\b', re.IGNORECASE)
 
 # Translation files: unreleased copy often ships here first
 I18N_PATH = re.compile(r'/(?:locales?|i18n|translations?|lang|messages|intl)/', re.IGNORECASE)
@@ -145,6 +150,7 @@ class Capture:
     sourcemap_headers: dict[str, str] = field(default_factory=dict)  # script url -> map url
     bytes_total: int = 0
     errors: list[str] = field(default_factory=list)
+    page_titles: list[str] = field(default_factory=list)
     captured_at: str = ''
 
     def to_dict(self) -> dict:
@@ -199,6 +205,14 @@ class Capture:
         capture.captured_at = data.get('capturedAt', '')
         return capture
 
+    @property
+    def loaded(self) -> bool:
+        """True when real app code or data arrived, not just a bot-check page."""
+        if any(CHECK_PAGE.search(title) for title in self.page_titles[:1]):
+            return False
+        app_code = any(url not in self.library_scripts for url in self.scripts)
+        return app_code or bool(self.api_responses)
+
     def add_script(self, url: str, text: str) -> None:
         """Keep one first-party script, within the size limits."""
         if url in self.scripts or len(self.scripts) >= MAX_SCRIPTS or self.bytes_total >= MAX_TOTAL_BYTES:
@@ -214,7 +228,7 @@ def is_flag_service(url: str, site_domain: str = '') -> bool:
     lowered = url.lower().split('?')[0]
     if any(hint in lowered for hint in FLAG_VENDOR_HINTS):
         return True
-    first_party = not site_domain or registrable_domain(host_of(url)) == site_domain
+    first_party = not site_domain or same_org(host_of(url), site_domain)
     return first_party and any(hint in lowered for hint in FLAG_PATH_HINTS)
 
 
@@ -349,14 +363,17 @@ async def _handle_response(response: Response, capture: Capture) -> None:
             'json' in content_type
             and resource_type in ('xhr', 'fetch')
             and not I18N_PATH.search(url)
-            and registrable_domain(host_of(url)) == capture.site_domain
+            and same_org(host_of(url), capture.site_domain)
             and len(capture.api_responses) < MAX_API_RESPONSES
-            and url not in capture.api_responses
         ):
+            key, operation = _api_key(url, response.request.method, response.request.post_data)
+            if key in capture.api_responses:
+                return
             body = await response.body()
             if len(body) <= MAX_API_BYTES:
                 frame = response.frame
-                capture.api_responses[url] = {
+                capture.api_responses[key] = {
+                    'operation': operation,
                     'method': response.request.method,
                     'status': response.status,
                     'page': frame.url if frame else capture.final_url,
@@ -365,7 +382,7 @@ async def _handle_response(response: Response, capture: Capture) -> None:
         elif (
             'json' in content_type
             and I18N_PATH.search(url)
-            and registrable_domain(host_of(url)) == capture.site_domain
+            and same_org(host_of(url), capture.site_domain)
             and len(capture.i18n_files) < MAX_I18N_FILES
         ):
             body = await response.body()
@@ -373,6 +390,25 @@ async def _handle_response(response: Response, capture: Capture) -> None:
                 capture.i18n_files[url] = body.decode('utf-8', errors='replace')
     except Exception as exc:  # noqa: BLE001 - one bad response must not stop the scan
         Actor.log.debug('Skipped a response: %s', exc)
+
+
+def _api_key(url: str, method: str, post_data: str | None) -> tuple[str, str]:
+    """One entry per distinct API call. GraphQL-style APIs share one URL, so the operation tells them apart."""
+    if method == 'GET' or not post_data:
+        return url, ''
+    operation = ''
+    try:
+        payload = json.loads(post_data)
+        first = payload[0] if isinstance(payload, list) and payload else payload
+        if isinstance(first, dict):
+            operation = str(first.get('operationName') or '')
+            if not operation and isinstance(first.get('query'), str):
+                match = re.search(r'(?:query|mutation)\s+(\w+)', first['query'])
+                operation = match.group(1) if match else ''
+    except (ValueError, TypeError):
+        pass
+    digest = hashlib.sha1(post_data.encode('utf-8', errors='replace')).hexdigest()[:10]
+    return f'{url}#{operation or digest}', operation
 
 
 async def _visit(page: Page, url: str, capture: Capture) -> None:
@@ -398,6 +434,10 @@ async def _visit(page: Page, url: str, capture: Capture) -> None:
     except Exception:  # noqa: BLE001 - scrolling is a nice-to-have
         pass
     capture.visited.append(page.url)
+    try:
+        capture.page_titles.append(await page.title())
+    except Exception:  # noqa: BLE001
+        capture.page_titles.append('')
 
 
 async def _read_page(page: Page, capture: Capture) -> None:

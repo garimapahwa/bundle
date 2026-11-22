@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from urllib.parse import urlsplit
 
 MAX_LEAVES_PER_RESPONSE = 4000
+GRAPHQL_PLUMBING = {'__typename', 'extensions', 'cursor', 'pageInfo'}
 
 # Personal data, recognized by the field name ...
 PII_KEYS = (
@@ -76,6 +77,8 @@ def flatten(node: object, path: str = '') -> list[Leaf]:
         if isinstance(current, dict):
             as_map = _is_data_map(current)
             for k, v in current.items():
+                if k in GRAPHQL_PLUMBING:
+                    continue  # protocol metadata present in every response, not data
                 segment = '{}' if as_map else str(k)
                 child = f'{current_path}{segment}' if as_map else (f'{current_path}.{k}' if current_path else str(k))
                 stack.append((v, child, key if as_map else str(k)))
@@ -206,8 +209,14 @@ def pii_kind(key: str, value: object) -> str | None:
 
 
 def endpoint_label(url: str) -> str:
-    """The endpoint without its query string, with numeric and long IDs replaced: /api/user/{id}."""
+    """The endpoint without its query string, with numeric and long IDs replaced: /api/user/{id}.
+
+    GraphQL-style calls keep their operation name: api.example.com/api (getUserProfile).
+    """
     parts = urlsplit(url)
+    operation = parts.fragment if parts.fragment and not re.fullmatch(r'[0-9a-f]{10}', parts.fragment) else ''
+    if operation:
+        return f'{endpoint_label(url.split("#")[0])} ({operation})'
     path = re.sub(r'/(?:\d+|[0-9a-f]{16,}|[0-9a-f-]{36})(?=/|$)', '/{id}', parts.path, flags=re.IGNORECASE)
     return f'{parts.netloc}{path}'
 
