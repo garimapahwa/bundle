@@ -219,7 +219,7 @@ async def main() -> None:
             ],
             top_fixes=fixes,
             findings_by_category=dict(Counter(r['category'] for r in audit.rows)),
-            findings=[{k: r[k] for k in ('severity', 'finding', 'field_or_key', 'fix')} for r in rows[:12]],
+            findings=[{k: r[k] for k in ('severity', 'finding', 'category', 'field_or_key', 'evidence_url', 'peer_benchmark', 'fix')} for r in rows[:60]],
             stats={**audit.stats, 'toolCalls': STATE.tool_calls, 'captureSource': STATE.capture_source, 'model': model_name},
             caveats=caveats,
             scanned_at=STATE.capture.captured_at,
