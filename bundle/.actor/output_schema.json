@@ -1,0 +1,23 @@
+{
+    "$schema": "https://apify.com/schemas/v1/output.ide.json",
+    "actorOutputSchemaVersion": 1,
+    "title": "Output of Bundle",
+    "description": "Every finding as a row, and the audit report",
+    "properties": {
+        "reportHtml": {
+            "type": "string",
+            "title": "Report (web page)",
+            "template": "{{links.apiDefaultKeyValueStoreUrl}}/records/report.html"
+        },
+        "reportMd": {
+            "type": "string",
+            "title": "Report (Markdown)",
+            "template": "{{links.apiDefaultKeyValueStoreUrl}}/records/report.md"
+        },
+        "findings": {
+            "type": "string",
+            "title": "Findings (one row each)",
+            "template": "{{links.apiDefaultDatasetUrl}}/items"
+        }
+    }
+}

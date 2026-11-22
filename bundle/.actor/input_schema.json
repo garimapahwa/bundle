@@ -1,0 +1,88 @@
+{
+    "$schema": "https://apify.com/schemas/v1/input.ide.json",
+    "title": "Bundle exposure audit",
+    "type": "object",
+    "schemaVersion": 1,
+    "properties": {
+        "targetUrl": {
+            "title": "Your website",
+            "type": "string",
+            "description": "The web app to audit, for example https://groww.in. Audit sites you own or are allowed to assess. Only public pages are loaded: no login, no form submission, no probing.",
+            "editor": "textfield",
+            "prefill": "https://groww.in"
+        },
+        "industry": {
+            "title": "Industry",
+            "type": "string",
+            "description": "Your industry, in plain words. Used to find peers and to compare like with like.",
+            "editor": "textfield",
+            "prefill": "online stock broking and investing"
+        },
+        "peerUrls": {
+            "title": "Peer websites (optional)",
+            "type": "array",
+            "description": "3 to 5 peer websites to benchmark against. Leave empty and the agent finds 3 to 5 similar sites itself. Peers are scanned the same way (public pages only) and shown anonymously.",
+            "editor": "stringList",
+            "default": []
+        },
+        "llmApiKey": {
+            "title": "LLM API key (optional)",
+            "type": "string",
+            "description": "Your own OpenRouter API key. Leave empty to use the Apify OpenRouter proxy, billed to your Apify account, with no key needed.",
+            "editor": "textfield",
+            "isSecret": true
+        },
+        "maxPages": {
+            "title": "Pages to visit",
+            "type": "integer",
+            "description": "How many public pages of your site to load. Peers get 2 pages each.",
+            "editor": "number",
+            "default": 3,
+            "minimum": 1,
+            "maximum": 10
+        },
+        "useCachedScan": {
+            "title": "Use saved captures",
+            "type": "boolean",
+            "description": "Reuse the captures saved by the last run for each site instead of loading them again. Fast and reliable for demos.",
+            "editor": "checkbox",
+            "default": false
+        },
+        "proxyConfiguration": {
+            "title": "Proxy configuration",
+            "type": "object",
+            "description": "Apify Proxy for the browser. Residential IPs keep big sites from blocking the crawl. If your plan has no residential access, the run continues without a proxy.",
+            "editor": "proxy",
+            "default": {
+                "useApifyProxy": true,
+                "apifyProxyGroups": [
+                    "RESIDENTIAL"
+                ]
+            },
+            "prefill": {
+                "useApifyProxy": true,
+                "apifyProxyGroups": [
+                    "RESIDENTIAL"
+                ]
+            }
+        },
+        "modelName": {
+            "title": "Model",
+            "type": "string",
+            "description": "OpenRouter model slug (see https://openrouter.ai/models).",
+            "editor": "textfield",
+            "default": "deepseek/deepseek-v4.1-flash",
+            "prefill": "deepseek/deepseek-v4.1-flash"
+        },
+        "debug": {
+            "title": "Debug",
+            "type": "boolean",
+            "description": "If enabled, the full tool results are written to the log.",
+            "editor": "checkbox",
+            "default": false
+        }
+    },
+    "required": [
+        "targetUrl"
+    ]
+}

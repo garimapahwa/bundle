@@ -1,0 +1,142 @@
+{
+    "$schema": "https://apify.com/schemas/v1/dataset.ide.json",
+    "actorSpecification": 1,
+    "fields": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "type": "object",
+        "properties": {
+            "finding": {
+                "type": "string",
+                "description": "What was found, in plain words",
+                "nullable": true,
+                "example": "Phone number sent but not shown"
+            },
+            "category": {
+                "type": "string",
+                "description": "pii_exposure, overexposed_field, secret, internal_endpoint, internal_host, source_map, or unreleased_flag",
+                "nullable": true,
+                "example": "pii_exposure"
+            },
+            "severity": {
+                "type": "string",
+                "description": "high, medium, or low. Personal data is always high.",
+                "nullable": true,
+                "example": "high",
+                "enum": [
+                    "high",
+                    "medium",
+                    "low"
+                ]
+            },
+            "field_or_key": {
+                "type": "string",
+                "description": "The JSON field path, flag key, endpoint, or masked key. Never a field value.",
+                "nullable": true,
+                "example": "data.user.mobile"
+            },
+            "evidence_url": {
+                "type": "string",
+                "description": "The API endpoint or file it came from, without query string",
+                "nullable": true,
+                "example": "https://api.example.com/v1/user/{id}"
+            },
+            "peer_benchmark": {
+                "type": "string",
+                "description": "How peers compare on this kind of finding, anonymously",
+                "nullable": true,
+                "example": "You 4.5 vs industry 2.1 unused fields per page; 1 of 4 peers send phone too"
+            },
+            "fix": {
+                "type": "string",
+                "description": "What to change",
+                "nullable": true,
+                "example": "Remove it from the API response, or send it masked and only to its owner."
+            }
+        },
+        "required": [],
+        "additionalProperties": true
+    },
+    "views": {
+        "findings": {
+            "title": "Findings",
+            "description": "What was found, most serious first",
+            "transformation": {
+                "fields": [
+                    "severity",
+                    "finding",
+                    "field_or_key",
+                    "fix"
+                ]
+            },
+            "display": {
+                "component": "table",
+                "properties": {
+                    "severity": {
+                        "label": "Severity",
+                        "format": "text"
+                    },
+                    "finding": {
+                        "label": "Finding",
+                        "format": "text"
+                    },
+                    "field_or_key": {
+                        "label": "Field or key",
+                        "format": "text"
+                    },
+                    "fix": {
+                        "label": "Fix",
+                        "format": "text"
+                    }
+                }
+            }
+        },
+        "details": {
+            "title": "All details",
+            "description": "Every column, including where it was found and how peers compare",
+            "transformation": {
+                "fields": [
+                    "severity",
+                    "finding",
+                    "category",
+                    "field_or_key",
+                    "evidence_url",
+                    "peer_benchmark",
+                    "fix"
+                ]
+            },
+            "display": {
+                "component": "table",
+                "properties": {
+                    "severity": {
+                        "label": "Severity",
+                        "format": "text"
+                    },
+                    "finding": {
+                        "label": "Finding",
+                        "format": "text"
+                    },
+                    "category": {
+                        "label": "Category",
+                        "format": "text"
+                    },
+                    "field_or_key": {
+                        "label": "Field or key",
+                        "format": "text"
+                    },
+                    "evidence_url": {
+                        "label": "Where",
+                        "format": "text"
+                    },
+                    "peer_benchmark": {
+                        "label": "Vs peers",
+                        "format": "text"
+                    },
+                    "fix": {
+                        "label": "Fix",
+                        "format": "text"
+                    }
+                }
+            }
+        }
+    }
+}

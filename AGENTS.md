@@ -1,70 +1,57 @@
 # Guidance for AI coding tools
 
-This repo is a forkable starter for a hands-on Apify workshop: build an AI agent that uses
-existing Apify Store Actors as tools, deploy it as an Actor, and monetize it. The full workshop
-lives in [`README.md`](./README.md). It is both the workshop structure and your reference for
-building agents here.
+This repo is **Bundle**: one Apify Actor that audits a web app's public pages for business
+exposure and benchmarks it against industry peers. What it does and how to run it is in
+[`README.md`](./README.md); the Apify Store page is [`bundle/README.md`](./bundle/README.md).
 
-The user's Actor lives in [`python-langgraph/`](./python-langgraph): the Python LangGraph AI
-agent template, wired to the Apify OpenRouter proxy. Build the user's agent there. Do not
-scaffold a second Actor.
-
-[`solution/`](./solution) is the finished workshop agent, kept as a fallback. Do not copy from
-it or edit it unless the user asks. When the user asks to build the workshop agent, write it in
-`python-langgraph/` from the prompt and the tool Actor table in `README.md`.
+The Actor lives in [`bundle/`](./bundle). There is one Actor and one `.actor/` folder. Do not
+split it into separate tool Actors.
 
 ## Defer to the Apify Actor Development skill
 
-For scaffolding, building, debugging, or deploying Actors, defer to the **Apify Actor
-Development Agent Skill** (`apify-actor-development`). Do not duplicate its instructions here.
+For scaffolding, building, debugging, or deploying the Actor, defer to the **Apify Actor
+Development Agent Skill** (`apify-actor-development`, in `.claude/skills/`). Do not duplicate its
+instructions here.
 
-Install it by copying `skills/apify-actor-development` from
-[apify/agent-skills](https://github.com/apify/agent-skills) into the tool's skills folder (for
-Claude Code, `.claude/skills/`).
+## How Bundle is built
 
-## Actor lifecycle (the workflow this repo teaches)
+- **The agent loop** is LangChain `create_agent` in `bundle/my_actor/main.py`, with a system
+  prompt, the Pydantic `AuditDraft` as `response_format`, and a recursion limit. The LLM runs
+  through the Apify OpenRouter proxy (`https://openrouter.apify.actor/api/v1`, `APIFY_TOKEN` as
+  the key), or the user's own OpenRouter key from the `llmApiKey` input.
+- **The tools** are plain functions in `bundle/my_actor/tools.py`: `fetchSite`,
+  `auditExposure`, `findPeers`, and `benchmarkPeers`. Each logs
+  `[agent] calling <tool> on <site>`. Only `findPeers` runs another Actor
+  (`apify/google-search-scraper`).
+- **Pure modules** hold the logic and have tests: `exposure.py` (API fields vs rendered DOM, PII),
+  `extractor.py` (secrets, endpoints, and flags in JavaScript, with a CLI), and `audit.py`
+  (findings, severity, score).
+- **Numbers come from code, words from the LLM.** The score, rank, and industry average are
+  computed in code. The LLM finds peers, picks the order of its tools, and writes the fixes.
+  Fixes are checked against real findings before they are saved.
+- **Output:** one dataset row per finding (`FindingRow`), plus `REPORT`, `report.md`, and
+  `report.html` in the key-value store. Pay per event: one `question-answered` charge per
+  completed audit.
 
-1. **Set up** - `apify login` once, then work in `python-langgraph/`.
-   [CLI reference](https://docs.apify.com/cli/docs/reference),
-   [Python SDK](https://docs.apify.com/sdk/python).
-2. **Build, deploy, and run** - `apify push`, then run it in Apify Console and check the **Log**
-   and **Dataset** tabs. There are no local runs: the OpenRouter proxy works only on the Apify
-   platform. [Running Actors](https://docs.apify.com/platform/actors/running).
-3. **Call it** - over the [API](https://docs.apify.com/api/v2) or the
-   [Apify MCP server](https://docs.apify.com/platform/integrations/mcp).
-4. **Monetize** - in the **Publishing** tab, set up pay per event, then publish to Apify Store.
-   [Monetize](https://docs.apify.com/platform/actors/publishing/monetize).
+## Rules that must not break
 
-## Building an AI agent (step 2, the payoff)
+- **Never store, log, or send a field value** (to the dataset, the report, the log, or the LLM).
+  Findings hold field paths and the kind of data only. Secret-like strings are always masked.
+- **Peers are anonymous**: Peer A to Peer E, counts only, never their field names.
+- **Public pages only**: no login, no form submission, no probing, no bypassing bot checks.
+- Tools return short, trimmed results, never whole responses or bundles.
 
-The pattern: **the agent loop runs inside the Actor, Apify Store Actors are the tools it calls,
-and the dataset is the output.**
+## Workflow
 
-- Keep the loop on LangChain's `create_agent`, as in the template, with a `system_prompt`, a
-  Pydantic `response_format`, and a recursion limit.
-- Call Actors as tools with `Actor.apify_client.actor('<username>/<name>').call(run_input=...)`,
-  then read `run['defaultDatasetId']` with `Actor.apify_client.dataset(...).list_items()`.
-  Read the tool Actor's input schema and a sample of its output before you write the tool.
-- Tools return only the fields the model needs, trimmed. Never return a whole dataset item or a
-  full transcript.
-- If a tool Actor fails, return the error as text so the agent can react. Do not raise.
-- Tool Actors must run under limited permissions, because an Actor with limited permissions can
-  only call other Actors that also use them.
-- Route the LLM through the [Apify OpenRouter proxy](https://apify.com/apify/openrouter): an
-  OpenAI-compatible endpoint at `https://openrouter.apify.actor/api/v1`, with `APIFY_TOKEN` as
-  the API key and any [OpenRouter model slug](https://openrouter.ai/models) as the model. The
-  agent needs only `APIFY_TOKEN` at runtime - no provider API key. The proxy works only for
-  Actors running on the Apify platform, so test with `apify push` and a run in Apify Console.
-- Alternative route, only if the user asks: their own provider key. See "Use your own LLM key
-  instead" in step 2 of the README.
-- Push one dataset item per finished result. The synthetic `apify-default-dataset-item` event
-  charges for it, so do not add a charge call for the same result.
+```bash
+cd bundle
+python -m pytest -q tests     # must pass before every push
+apify push                     # the OpenRouter proxy only works on the Apify platform
+```
 
 ## Writing style (for any docs edits)
 
-- "Actor" is always capitalized when it means an Apify Actor. "task" and "schedule" stay
-  lowercase.
+- "Actor" is always capitalized when it means an Apify Actor.
 - Use "Apify Store", "Apify Console", "Apify Proxy" (no "the"), but "the Apify platform".
-- Headings in sentence case, never title case.
-- No em dashes. Use a spaced hyphen ` - ` instead.
+- Headings in sentence case. No em dashes; use a spaced hyphen ` - ` instead.
 - US English, Oxford comma.

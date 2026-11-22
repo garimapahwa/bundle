@@ -1,0 +1,32 @@
+{
+    "$schema": "https://apify.com/schemas/v1/key-value-store.ide.json",
+    "actorKeyValueStoreSchemaVersion": 1,
+    "title": "Bundle exposure audit report",
+    "description": "The audit report in three formats",
+    "collections": {
+        "reportHtml": {
+            "title": "Report (web page)",
+            "description": "The report as a web page: score, rank vs peers, and the top 5 fixes",
+            "key": "report.html",
+            "contentTypes": [
+                "text/html"
+            ]
+        },
+        "reportMd": {
+            "title": "Report (Markdown)",
+            "description": "The report as Markdown",
+            "key": "report.md",
+            "contentTypes": [
+                "text/markdown"
+            ]
+        },
+        "report": {
+            "title": "Report (JSON)",
+            "description": "The full report: score, rank, industry average, anonymous peers, top fixes, and stats",
+            "key": "REPORT",
+            "contentTypes": [
+                "application/json"
+            ]
+        }
+    }
+}

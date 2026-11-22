@@ -11,3 +11,6 @@ storage/
 
 # IDE
 .idea/
+
+# Tests
+.pytest_cache/

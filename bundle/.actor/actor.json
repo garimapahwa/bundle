@@ -1,0 +1,22 @@
+{
+	"$schema": "https://apify.com/schemas/v1/actor.ide.json",
+	"actorSpecification": 1,
+	"name": "bundle",
+	"title": "Bundle: web app exposure audit with industry benchmark",
+	"description": "Finds what your web app gives away to every visitor: API fields the page never shows (PII flagged high), secrets in JavaScript, internal endpoints, and unreleased flags. Benchmarks you against industry peers and lists the top 5 fixes, with DPDP Act context.",
+	"version": "0.1",
+	"buildTag": "latest",
+	"minMemoryMbytes": 2048,
+	"maxMemoryMbytes": 4096,
+	"inputSchema": "./input_schema.json",
+	"outputSchema": "./output_schema.json",
+	"storages": {
+		"dataset": "./dataset_schema.json",
+		"keyValueStore": "./key_value_store_schema.json"
+	},
+	"meta": {
+		"templateId": "python-langgraph",
+		"generatedBy": "Claude Code with Claude Opus 5.5"
+	},
+	"dockerfile": "../Dockerfile"
+}
